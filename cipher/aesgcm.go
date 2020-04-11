@@ -6,33 +6,33 @@ import (
 	"encoding/binary"
 )
 
-// NonceSizeAESGCM specifies the 12-byte nonce used by the cipher.
-const NonceSizeAESGCM = 12
+// nonceSizeaESGCM specifies the 12-byte nonce used by the cipher.
+const nonceSizeaESGCM = 12
 
-// AESGCM is the instance of AESGCMCipher, exported as supported ciphers.
-var AESGCM AEAD = &AESGCMCipher{}
+// aESGCM is the instance of aESGCMCipher, exported as supported ciphers.
+var aESGCM AEAD = &aESGCMCipher{}
 
-// AESGCMCipher implements the Cipher interface.
-type AESGCMCipher struct {
+// aESGCMCipher implements the Cipher interface.
+type aESGCMCipher struct {
 	cipher cipher.AEAD
 }
 
 // Cipher returns the AEAD attached in the struct.
-func (agc *AESGCMCipher) Cipher() cipher.AEAD {
+func (agc *aESGCMCipher) Cipher() cipher.AEAD {
 	return agc.cipher
 }
 
 // EncodeNonce encodes the nonce from an 8-byte unsigned integer into a 12-byte
 // slice. The 12-byte nonce is formed by encoding 32 bits of zeros followed
 // by big-endian encoding of n.
-func (agc *AESGCMCipher) EncodeNonce(n uint64) []byte {
-	var nonce [NonceSizeAESGCM]byte
+func (agc *aESGCMCipher) EncodeNonce(n uint64) []byte {
+	var nonce [nonceSizeaESGCM]byte
 	binary.BigEndian.PutUint64(nonce[4:], n)
 	return nonce[:]
 }
 
 // Encrypt calls the underlying Seal function to create the ciphertext.
-func (agc *AESGCMCipher) Encrypt(n uint64, ad [ADSize]byte,
+func (agc *aESGCMCipher) Encrypt(n uint64, ad [ADSize]byte,
 	plaintext []byte) ([]byte, error) {
 	// nonce must be less than 2^64-1
 	if n == MaxNonce {
@@ -45,7 +45,7 @@ func (agc *AESGCMCipher) Encrypt(n uint64, ad [ADSize]byte,
 }
 
 // Decrypt calls the underlying Seal function to extract the plaintext.
-func (agc *AESGCMCipher) Decrypt(n uint64, ad [ADSize]byte,
+func (agc *aESGCMCipher) Decrypt(n uint64, ad [ADSize]byte,
 	ciphertext []byte) ([]byte, error) {
 	// nonce must be less than 2^64-1
 	if n == MaxNonce {
@@ -60,8 +60,8 @@ func (agc *AESGCMCipher) Decrypt(n uint64, ad [ADSize]byte,
 	return plaintext, nil
 }
 
-// InitCipher creates a new cipher and attach it to AESGCMCipher.
-func (agc *AESGCMCipher) InitCipher(key [KeySize]byte) error {
+// InitCipher creates a new cipher and attach it to aESGCMCipher.
+func (agc *aESGCMCipher) InitCipher(key [KeySize]byte) error {
 	// NewCipher will return an error iff the key size is wrong. So we ignore
 	// the error because the key size is fixed 32 byte.
 	block, _ := aes.NewCipher(key[:])
@@ -75,10 +75,10 @@ func (agc *AESGCMCipher) InitCipher(key [KeySize]byte) error {
 	return nil
 }
 
-func (agc *AESGCMCipher) String() string {
+func (agc *aESGCMCipher) String() string {
 	return "AESGCM"
 }
 
 func init() {
-	Register(AESGCM.String(), AESGCM)
+	Register(aESGCM.String(), aESGCM)
 }

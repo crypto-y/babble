@@ -1,6 +1,7 @@
 package cipher_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -23,11 +24,8 @@ var (
 )
 
 func TestAESGCM(t *testing.T) {
-	aesgcm := cipher.AESGCM
+	aesgcm := cipher.FromString("AESGCM")
 	aesgcm.InitCipher(key)
-
-	// check setup
-	require.Equal(t, "AESGCM", aesgcm.String(), "name should be AESGCM")
 
 	// first we encrypt the message
 	ciphertext, _ := aesgcm.Encrypt(nonce, ad, message)
@@ -50,12 +48,8 @@ func TestAESGCM(t *testing.T) {
 }
 
 func TestChaChaPoly(t *testing.T) {
-	ChaChaPoly := cipher.ChaChaPoly
+	ChaChaPoly := cipher.FromString("ChaChaPoly")
 	ChaChaPoly.InitCipher(key)
-
-	// check setup
-	require.Equal(t, "ChaChaPoly", ChaChaPoly.String(),
-		"name should be ChaChaPoly")
 
 	// first we encrypt the message
 	ciphertext, _ := ChaChaPoly.Encrypt(nonce, ad, message)
@@ -77,13 +71,24 @@ func TestChaChaPoly(t *testing.T) {
 	require.NotNil(t, err, "Open a wrong ciphertext should return an error")
 }
 
-func TestFromString(t *testing.T) {
+func TestSetUp(t *testing.T) {
 	// check supported curves
-	require.Equal(t, cipher.AESGCM, cipher.FromString("AESGCM"),
-		"missing AESGCM")
-	require.Equal(t, cipher.ChaChaPoly, cipher.FromString("ChaChaPoly"),
-		"missing ChaChaPoly")
+	require.NotNil(t, cipher.FromString("AESGCM"), "missing AESGCM")
+	require.NotNil(t, cipher.FromString("ChaChaPoly"), "missing ChaChaPoly")
 
 	// check return empty
 	require.Nil(t, cipher.FromString("yy"), "yy does not exist, yet")
+
+	require.Equal(t, len("AESGCM, ChaChaPoly"),
+		len(cipher.SupportedCiphers()),
+		"cipher AESGCM, ChaChaPoly should be returned")
+}
+func ExampleFromString() {
+	// load cipher AESGCM
+	aesgcm := cipher.FromString("AESGCM")
+	fmt.Println(aesgcm)
+
+	// load cipher ChaChaPoly
+	ccp := cipher.FromString("ChaChaPoly")
+	fmt.Println(ccp)
 }

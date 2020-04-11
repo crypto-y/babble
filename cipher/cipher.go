@@ -11,6 +11,7 @@ import (
 	"crypto/cipher"
 	"errors"
 	"fmt"
+	"strings"
 )
 
 const (
@@ -71,4 +72,15 @@ func FromString(s string) AEAD {
 func Register(s string, a AEAD) {
 	// TODO: check registry
 	supportedCiphers[s] = a
+}
+
+// SupportedCiphers gives the names of all the ciphers registered. If no new
+// ciphers are registered, it returns a string as "AESGCM, ChaChaPoly", orders
+// not preserved.
+func SupportedCiphers() string {
+	keys := make([]string, 0, len(supportedCiphers))
+	for k := range supportedCiphers {
+		keys = append(keys, k)
+	}
+	return strings.Join(keys, ", ")
 }
