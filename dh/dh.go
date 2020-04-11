@@ -9,6 +9,7 @@ package dh
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
 // MinDHLEN specifies the minimal size in bytes of public keys and DH
@@ -19,11 +20,7 @@ var (
 	// ErrMismatchedPublicKey is returned when the public key fails to match.
 	ErrMismatchedPublicKey = errors.New("public key mismatch")
 
-	supportedCurves = map[string]Curve{
-		// "25519":     X25519,
-		// "448":       X448,
-		// "secp256k1": Secp256k1,
-	}
+	supportedCurves = map[string]Curve{}
 )
 
 // PublicKey represents a public key. The only place to use it is during a DHKE,
@@ -34,6 +31,10 @@ type PublicKey interface {
 
 	// Hex returns the hexstring of the public key.
 	Hex() string
+
+	// LoadBytes loads the byte slice into a byte array specifically for a
+	// public key defined in each curve.
+	LoadBytes(data []byte) error
 }
 
 // PrivateKey is a key pair. Since a private key always corresponds to at least
@@ -50,7 +51,7 @@ type PrivateKey interface {
 	// output which is purely a function of the public key and does not depend
 	// on the private key, or by signaling an error to the caller. The DH
 	// function may define more specific rules for handling invalid values.
-	DH(pub PublicKey) ([]byte, error)
+	DH(pub []byte) ([]byte, error)
 
 	// Update updates both the private key bytes and the public key bytes with
 	// the data supplied. This means the calculation of the public key from the
@@ -65,10 +66,9 @@ type PrivateKey interface {
 type Curve interface {
 	fmt.Stringer
 
-	// GenerateKeyPair generates a new Diffie-Hellman key pair. A PublicKey
-	// represents an encoding of a DH public key into a byte sequence of length
-	// DHLEN. The publicKey encoding details are specific to each set of DH
-	// functions.
+	// GenerateKeyPair generates a new Diffie-Hellman key pair. It creates a key
+	// pair from entropy. If the entropy is not supplied, it will use rand.Read
+	// to generate a new private key.
 	GenerateKeyPair(entropy []byte) (PrivateKey, error)
 
 	// Size returns the DHLEN value.
@@ -84,4 +84,15 @@ func FromString(s string) Curve {
 func Register(s string, c Curve) {
 	// TODO: check registry
 	supportedCurves[s] = c
+}
+
+// SupportedCurves gives the names of all the curves registered. If no new
+// curves are registered, it returns a string as "25519, 448, secp256k1", orders
+// not preserved.
+func SupportedCurves() string {
+	keys := make([]string, 0, len(supportedCurves))
+	for k := range supportedCurves {
+		keys = append(keys, k)
+	}
+	return strings.Join(keys, ", ")
 }

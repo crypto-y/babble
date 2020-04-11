@@ -5,8 +5,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	. "github.com/yyforyongyu/noise/dh"
+	"github.com/yyforyongyu/noise/dh"
 )
+
+var x448 = dh.FromString("448")
 
 func TestGenerateKeyPair448(t *testing.T) {
 
@@ -35,7 +37,7 @@ func TestGenerateKeyPair448(t *testing.T) {
 	)
 
 	// supply 32-byte entropy
-	privKey, _ := X448.GenerateKeyPair(priv[:])
+	privKey, _ := x448.GenerateKeyPair(priv[:])
 
 	require.Equal(t, priv[:], privKey.Bytes(),
 		"private keys not match")
@@ -49,7 +51,7 @@ func TestGenerateKeyPair448(t *testing.T) {
 	var extra []byte
 	extra = append(extra, priv[:]...)
 	extra = append(extra, byte(0x01))
-	privKey, _ = X448.GenerateKeyPair(extra)
+	privKey, _ = x448.GenerateKeyPair(extra)
 
 	require.Equal(t, priv[:], privKey.Bytes(),
 		"private keys not match")
@@ -59,7 +61,7 @@ func TestGenerateKeyPair448(t *testing.T) {
 		"public key string doesn't match")
 
 	// no entropy passed, it should generate a new key pair.
-	privKey, _ = X448.GenerateKeyPair(nil)
+	privKey, _ = x448.GenerateKeyPair(nil)
 
 	// weak check, as long as the keys changed, it'll pass
 	require.NotEqual(t, priv[:], privKey.Bytes(),
@@ -70,7 +72,7 @@ func TestGenerateKeyPair448(t *testing.T) {
 		"public key string should not match")
 
 	// call it again and check that it indeed is "random"
-	newprivKey, _ := X448.GenerateKeyPair(nil)
+	newprivKey, _ := x448.GenerateKeyPair(nil)
 	require.NotEqual(t, privKey.Bytes(), newprivKey.Bytes(),
 		"private keys should not match")
 	require.NotEqual(t, privKey.PubKey().Bytes(), newprivKey.PubKey().Bytes(),
@@ -80,8 +82,8 @@ func TestGenerateKeyPair448(t *testing.T) {
 }
 
 func TestCurveSetUp448(t *testing.T) {
-	require.Equal(t, 56, X448.Size(), "Curve448's DHLEN must be 56")
-	require.Equal(t, "448", X448.String(), "name must be 448")
+	require.Equal(t, 56, x448.Size(), "Curve448's DHLEN must be 56")
+	require.Equal(t, "448", x448.String(), "name must be 448")
 }
 
 func TestDH448(t *testing.T) {
@@ -107,7 +109,7 @@ func TestDH448(t *testing.T) {
 			0xc, 0x5b, 0x12, 0xda, 0x88, 0x12, 0xd, 0x53,
 			0x17, 0x7f, 0x80, 0xe5, 0x32, 0xc4, 0x1f, 0xa0,
 		}
-		alicePrivKey, _ = X448.GenerateKeyPair(alicePriv[:])
+		alicePrivKey, _ = x448.GenerateKeyPair(alicePriv[:])
 
 		bobPriv = [56]byte{
 			0x1c, 0x30, 0x6a, 0x7a, 0xc2, 0xa0, 0xe2, 0xe0,
@@ -127,7 +129,7 @@ func TestDH448(t *testing.T) {
 			0xa7, 0x6, 0xdc, 0xb5, 0x7a, 0xec, 0x3d, 0xae,
 			0x7, 0xbd, 0xc1, 0xc6, 0x7b, 0xf3, 0x36, 0x9,
 		}
-		bobPrivKey, _ = X448.GenerateKeyPair(bobPriv[:])
+		bobPrivKey, _ = x448.GenerateKeyPair(bobPriv[:])
 
 		shared = [56]byte{
 			0x7, 0xff, 0xf4, 0x18, 0x1a, 0xc6, 0xcc, 0x95,
@@ -140,22 +142,21 @@ func TestDH448(t *testing.T) {
 		}
 	)
 	// when public key is wrong, an error is returned
-	invalidPub := &invalid{[1]byte{byte(1)}}
 	secret, err := alicePrivKey.DH(invalidPub)
 	require.Equal(t, EMPTY, secret,
 		"when public is wrong, no key pair should return")
-	require.Equal(t, ErrMismatchedPublicKey, err,
+	require.Equal(t, dh.ErrMismatchedPublicKey, err,
 		"wrong error returned")
 
 	// check from Alice's view
-	secret, err = alicePrivKey.DH(bobPrivKey.PubKey())
+	secret, err = alicePrivKey.DH(bobPub[:])
 	require.Equal(t, bobPub[:], bobPrivKey.PubKey().Bytes(),
 		"bob's public keys do not match")
 	require.Equal(t, shared[:], secret,
 		"the shared secrets from alice's DH do not match")
 
 	// check from Bob's view
-	secret, err = bobPrivKey.DH(alicePrivKey.PubKey())
+	secret, err = bobPrivKey.DH(alicePub[:])
 	require.Equal(t, alicePub[:], alicePrivKey.PubKey().Bytes(),
 		"alice's public keys do not match")
 	require.Equal(t, shared[:], secret,
