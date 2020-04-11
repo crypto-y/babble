@@ -9,9 +9,6 @@ import (
 // nonceSizeaESGCM specifies the 12-byte nonce used by the cipher.
 const nonceSizeaESGCM = 12
 
-// aESGCM is the instance of aESGCMCipher, exported as supported ciphers.
-var aESGCM AEAD = &aESGCMCipher{}
-
 // aESGCMCipher implements the Cipher interface.
 type aESGCMCipher struct {
 	cipher cipher.AEAD
@@ -80,5 +77,8 @@ func (agc *aESGCMCipher) String() string {
 }
 
 func init() {
-	Register(aESGCM.String(), aESGCM)
+	// aESGCM is the instance of aESGCMCipher, exported as supported ciphers.
+	var aesgcm AEAD = &aESGCMCipher{}
+
+	Register(aesgcm.String(), aesgcm)
 }

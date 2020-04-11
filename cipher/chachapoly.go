@@ -10,9 +10,6 @@ import (
 // nonceSizechaChaPoly specifies the 12-byte nonce used by the cipher.
 const nonceSizechaChaPoly = 12
 
-// chaChaPoly is an instance of chaChaPolyCipher, exported as supported ciphers.
-var chaChaPoly AEAD = &chaChaPolyCipher{}
-
 // chaChaPolyCipher implements the Cipher interface.
 type chaChaPolyCipher struct {
 	cipher cipher.AEAD
@@ -76,5 +73,8 @@ func (ccpc *chaChaPolyCipher) String() string {
 }
 
 func init() {
+	// chaChaPoly is an instance of chaChaPolyCipher, exported as supported
+	// ciphers.
+	var chaChaPoly AEAD = &chaChaPolyCipher{}
 	Register(chaChaPoly.String(), chaChaPoly)
 }
