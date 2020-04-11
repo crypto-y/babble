@@ -14,9 +14,6 @@ const dhlenBitcoin = 32
 // lenBitcoin defines the public key length(compressed).
 const lenBitcoinPubKey = 33
 
-// secp256k1 implements the DH interface for the Bitcoin curve.
-var secp256k1 Curve = &curveBitcoin{DHLEN: dhlenBitcoin}
-
 // publicKeyBitcoin implements the PublicKey interface.
 type publicKeyBitcoin struct {
 	// btcecPub mounts a btcec.PublicKey
@@ -131,5 +128,7 @@ func (dh *curveBitcoin) String() string {
 }
 
 func init() {
+	// secp256k1 implements the DH interface for the Bitcoin curve.
+	var secp256k1 Curve = &curveBitcoin{DHLEN: dhlenBitcoin}
 	Register(secp256k1.String(), secp256k1)
 }

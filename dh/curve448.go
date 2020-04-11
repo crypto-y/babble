@@ -10,9 +10,6 @@ import (
 // dhlen448 defines the DHLEN for x448.
 const dhlen448 = 56
 
-// X448 implements the DH interface for curve448.
-var x448 Curve = &curve448{DHLEN: dhlen448}
-
 // publicKey448 implements the PublicKey interface.
 type publicKey448 struct {
 	raw [dhlen448]byte
@@ -111,5 +108,7 @@ func (c *curve448) String() string {
 }
 
 func init() {
+	// X448 implements the DH interface for curve448.
+	var x448 Curve = &curve448{DHLEN: dhlen448}
 	Register(x448.String(), x448)
 }

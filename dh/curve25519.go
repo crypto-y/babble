@@ -10,9 +10,6 @@ import (
 // dhlen25519 defines the DHLEN for x25519.
 const dhlen25519 = 32
 
-// x25519 implements the DH interface for curve25519.
-var x25519 Curve = &curve25519{DHLEN: dhlen25519}
-
 // publicKey25519 implements the PublicKey interface.
 type publicKey25519 struct {
 	raw [dhlen25519]byte
@@ -111,5 +108,7 @@ func (dh *curve25519) String() string {
 }
 
 func init() {
+	// x25519 implements the DH interface for curve25519.
+	var x25519 Curve = &curve25519{DHLEN: dhlen25519}
 	Register(x25519.String(), x25519)
 }
