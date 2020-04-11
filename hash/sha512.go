@@ -12,21 +12,21 @@ type hashSha512 struct {
 
 // BlockLen for sha512 should be 128.
 func (s *hashSha512) BlockLen() int {
-	return s.H().BlockSize()
+	return s.New().BlockSize()
 }
 
-func (s *hashSha512) H() hash.Hash {
+func (s *hashSha512) New() hash.Hash {
 	return s.h
 }
 
 func (s *hashSha512) Hash(data []byte) []byte {
-	s.H().Write(data)
+	s.New().Write(data)
 	return s.h.Sum(nil)
 }
 
 // HashLen for sha512 should be 64.
 func (s *hashSha512) HashLen() int {
-	return s.H().Size()
+	return s.New().Size()
 }
 
 func (s *hashSha512) String() string {
@@ -34,7 +34,7 @@ func (s *hashSha512) String() string {
 }
 
 func (s *hashSha512) Reset() {
-	s.H().Reset()
+	s.New().Reset()
 }
 
 func init() {

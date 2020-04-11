@@ -38,20 +38,20 @@ type hashSha3 struct {
 }
 
 func (s *hashSha3) BlockLen() int {
-	return s.H().BlockSize()
+	return s.New().BlockSize()
 }
 
-func (s *hashSha3) H() hash.Hash {
+func (s *hashSha3) New() hash.Hash {
 	return s.h
 }
 
 func (s *hashSha3) Hash(data []byte) []byte {
-	s.H().Write(data)
+	s.New().Write(data)
 	return s.h.Sum(nil)
 }
 
 func (s *hashSha3) HashLen() int {
-	return s.H().Size()
+	return s.New().Size()
 }
 
 func (s *hashSha3) String() string {
@@ -59,7 +59,7 @@ func (s *hashSha3) String() string {
 }
 
 func (s *hashSha3) Reset() {
-	s.H().Reset()
+	s.New().Reset()
 }
 
 func main() {

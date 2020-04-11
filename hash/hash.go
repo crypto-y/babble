@@ -11,7 +11,14 @@ import (
 	"strings"
 )
 
-var supportedHashes = map[string]Hash{}
+var (
+	byte00 = []byte{0}
+	byte01 = []byte{1}
+	byte02 = []byte{2}
+	byte03 = []byte{3}
+
+	supportedHashes = map[string]Hash{}
+)
 
 // Hash defines a hash interface specified by the noise specs.
 type Hash interface {
@@ -22,8 +29,8 @@ type Hash interface {
 	// This is needed to use the hash function with HMAC.
 	BlockLen() int
 
-	// H returns the hash function used.
-	H() hash.Hash
+	// New returns the hash function used.
+	New() hash.Hash
 
 	// Hash uses some arbitrary-length data with a collision-resistant
 	// cryptographic hash function and returns an output of HashLen bytes.

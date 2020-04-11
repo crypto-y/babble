@@ -12,21 +12,21 @@ type hashSha256 struct {
 
 // BlockLen for sha256 should be 64.
 func (s *hashSha256) BlockLen() int {
-	return s.H().BlockSize()
+	return s.New().BlockSize()
 }
 
-func (s *hashSha256) H() hash.Hash {
+func (s *hashSha256) New() hash.Hash {
 	return s.h
 }
 
 func (s *hashSha256) Hash(data []byte) []byte {
-	s.H().Write(data)
+	s.New().Write(data)
 	return s.h.Sum(nil)
 }
 
 // HashLen for sha256 should be 32.
 func (s *hashSha256) HashLen() int {
-	return s.H().Size()
+	return s.New().Size()
 }
 
 func (s *hashSha256) String() string {
@@ -34,7 +34,7 @@ func (s *hashSha256) String() string {
 }
 
 func (s *hashSha256) Reset() {
-	s.H().Reset()
+	s.New().Reset()
 }
 
 func init() {
