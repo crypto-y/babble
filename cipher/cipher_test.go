@@ -45,6 +45,20 @@ func TestAESGCM(t *testing.T) {
 	wrongCiphertext := []byte{}
 	_, err = aesgcm.Decrypt(nonce, ad, wrongCiphertext)
 	require.NotNil(t, err, "Open a wrong ciphertext should return an error")
+
+	// test Rekey
+	err = aesgcm.Rekey()
+	require.Nil(t, err, "rekey should have no error")
+	// the key is updated, encrypt the old ciphertext will raise an
+	// authentication failed error
+	niltext, err := aesgcm.Decrypt(nonce, ad, ciphertext)
+	require.Nil(t, niltext, "plaintext should be nil")
+	require.NotNil(t, err, "should return an authentication error")
+	// encrypt the plaintext with our new cipher
+	newCiphertext, err := aesgcm.Encrypt(nonce, ad, ciphertext)
+	require.Nil(t, err, "encrypt should have no error")
+	require.NotEqual(t, ciphertext, newCiphertext,
+		"ciphertexts should be different")
 }
 
 func TestChaChaPoly(t *testing.T) {
@@ -69,6 +83,20 @@ func TestChaChaPoly(t *testing.T) {
 	wrongCiphertext := []byte{}
 	_, err = ChaChaPoly.Decrypt(nonce, ad, wrongCiphertext)
 	require.NotNil(t, err, "Open a wrong ciphertext should return an error")
+
+	// test Rekey
+	err = ChaChaPoly.Rekey()
+	require.Nil(t, err, "rekey should have no error")
+	// the key is updated, encrypt the old ciphertext will raise an
+	// authentication failed error
+	niltext, err := ChaChaPoly.Decrypt(nonce, ad, ciphertext)
+	require.Nil(t, niltext, "plaintext should be nil")
+	require.NotNil(t, err, "should return an authentication error")
+	// encrypt the plaintext with our new cipher
+	newCiphertext, err := ChaChaPoly.Encrypt(nonce, ad, ciphertext)
+	require.Nil(t, err, "encrypt should have no error")
+	require.NotEqual(t, ciphertext, newCiphertext,
+		"ciphertexts should be different")
 }
 
 func TestSetUp(t *testing.T) {

@@ -72,6 +72,22 @@ func (agc *aESGCMCipher) InitCipher(key [KeySize]byte) error {
 	return nil
 }
 
+// Rekey updates the cipher's key by calling InitCipher.
+//
+// Note that instead of calling Encrypt as specified in the noise specs, it
+// directly calls cipher.Seal to bypass the nonce and ad size check in Encrypt.
+func (agc *aESGCMCipher) Rekey() error {
+	var newKey [KeySize]byte
+
+	nonce := agc.EncodeNonce(MaxNonce)
+	key := agc.Cipher().Seal(nil, nonce, ZEROS[:], ZEROLEN)
+	copy(newKey[:], key)
+
+	// InitCipher has no error, safe to ignore
+	agc.InitCipher(newKey)
+	return nil
+}
+
 func (agc *aESGCMCipher) String() string {
 	return "AESGCM"
 }

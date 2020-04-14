@@ -32,6 +32,12 @@ var (
 	// ErrNonceOverflow is used when the nonce exceeds the 2^64-1 limit.
 	ErrNonceOverflow = errors.New("nonce is too big")
 
+	// ZEROLEN is a zero-length byte sequence.
+	ZEROLEN []byte
+
+	// ZEROS is a 32-byte array filled with zeros.
+	ZEROS [KeySize]byte
+
 	supportedCiphers = map[string]AEAD{}
 )
 
@@ -42,6 +48,11 @@ type AEAD interface {
 	// Cipher returns a cipher.AEAD. This function enforces that any cipher
 	// implement this AEAD interface must also satisfy the cipher.AEAD.
 	Cipher() cipher.AEAD
+
+	// Decrypt uses a cipher key k of 32 bytes, an 8-byte unsigned integer nonce
+	// n, and associated data ad, and returns the plaintext, unless
+	// authentication fails, in which case an error is returned.
+	Decrypt(n uint64, ad [ADSize]byte, ciphertext []byte) ([]byte, error)
 
 	// EncodeNonce turns the nonce used in the noise protocol into a format
 	// that's accepted by the specific cipher specs.
@@ -54,13 +65,21 @@ type AEAD interface {
 	// plaintext plus 16 bytes for authentication data.
 	Encrypt(n uint64, ad [ADSize]byte, plaintext []byte) ([]byte, error)
 
-	// Decrypt uses a cipher key k of 32 bytes, an 8-byte unsigned integer nonce
-	// n, and associated data ad, and returns the plaintext, unless
-	// authentication fails, in which case an error is returned.
-	Decrypt(n uint64, ad [ADSize]byte, ciphertext []byte) ([]byte, error)
-
 	// InitCipher creates a cipher with the secret key.
 	InitCipher(key [KeySize]byte) error
+
+	// Rekey resets a new 32-byte cipher key as a pseudorandom function of key.
+	// If this function is not specifically defined for some set of cipher
+	// functions, then it defaults returning the first 32 bytes from calling
+	// Encrypt with,
+	//  - n as maxnonce, which equals 2^64-1,
+	//  - ad as zerolen, a zero-length byte sequence,
+	//  - plaintext as zeros, a sequence of 32 bytes filled with zeros.
+	//
+	// Note that Rekey only updates the cipher's key value, it doesn't reset the
+	// cipher's nonce value, so applications performing Rekey must still perform
+	// a new handshake if sending 2^64 or more transport messages.
+	Rekey() error
 }
 
 // FromString uses the provided cipher name, s, to query a built-in cipher.
