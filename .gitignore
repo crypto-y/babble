@@ -46,4 +46,4 @@ profile.tmp
 .code-workspace
 sample.*
 
-.tmp
+*.tmp
