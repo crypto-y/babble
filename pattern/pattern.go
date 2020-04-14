@@ -1,3 +1,4 @@
+// Package pattern implements the noise handshake pattern.
 package pattern
 
 import (
