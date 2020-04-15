@@ -29,28 +29,28 @@ func (agc *aESGCMCipher) EncodeNonce(n uint64) []byte {
 }
 
 // Encrypt calls the underlying Seal function to create the ciphertext.
-func (agc *aESGCMCipher) Encrypt(n uint64, ad [ADSize]byte,
-	plaintext []byte) ([]byte, error) {
+func (agc *aESGCMCipher) Encrypt(
+	n uint64, ad, plaintext []byte) ([]byte, error) {
 	// nonce must be less than 2^64-1
 	if n == MaxNonce {
 		return nil, ErrNonceOverflow
 	}
 
 	nonce := agc.EncodeNonce(n)
-	ciphertext := agc.Cipher().Seal(nil, nonce, plaintext, ad[:])
+	ciphertext := agc.Cipher().Seal(nil, nonce, plaintext, ad)
 	return ciphertext, nil
 }
 
 // Decrypt calls the underlying Seal function to extract the plaintext.
-func (agc *aESGCMCipher) Decrypt(n uint64, ad [ADSize]byte,
-	ciphertext []byte) ([]byte, error) {
+func (agc *aESGCMCipher) Decrypt(
+	n uint64, ad, ciphertext []byte) ([]byte, error) {
 	// nonce must be less than 2^64-1
 	if n == MaxNonce {
 		return nil, ErrNonceOverflow
 	}
 
 	nonce := agc.EncodeNonce(n)
-	plaintext, err := agc.Cipher().Open(nil, nonce, ciphertext, ad[:])
+	plaintext, err := agc.Cipher().Open(nil, nonce, ciphertext, ad)
 	if err != nil {
 		return nil, err
 	}
@@ -72,11 +72,11 @@ func (agc *aESGCMCipher) InitCipher(key [KeySize]byte) error {
 	return nil
 }
 
-// Rekey updates the cipher's key by calling InitCipher.
+// Rekey updates the cipher's key by calling InitCipher, returns the new key.
 //
 // Note that instead of calling Encrypt as specified in the noise specs, it
 // directly calls cipher.Seal to bypass the nonce and ad size check in Encrypt.
-func (agc *aESGCMCipher) Rekey() error {
+func (agc *aESGCMCipher) Rekey() ([KeySize]byte, error) {
 	var newKey [KeySize]byte
 
 	nonce := agc.EncodeNonce(MaxNonce)
@@ -85,7 +85,7 @@ func (agc *aESGCMCipher) Rekey() error {
 
 	// InitCipher has no error, safe to ignore
 	agc.InitCipher(newKey)
-	return nil
+	return newKey, nil
 }
 
 func (agc *aESGCMCipher) String() string {

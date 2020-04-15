@@ -30,28 +30,28 @@ func (ccpc *chaChaPolyCipher) EncodeNonce(n uint64) []byte {
 }
 
 // Encrypt calls the underlying Seal function to create the ciphertext.
-func (ccpc *chaChaPolyCipher) Encrypt(n uint64, ad [ADSize]byte,
-	plaintext []byte) ([]byte, error) {
+func (ccpc *chaChaPolyCipher) Encrypt(
+	n uint64, ad, plaintext []byte) ([]byte, error) {
 	// nonce must be less than 2^64-1
 	if n == MaxNonce {
 		return nil, ErrNonceOverflow
 	}
 
 	nonce := ccpc.EncodeNonce(n)
-	ciphertext := ccpc.Cipher().Seal(nil, nonce, plaintext, ad[:])
+	ciphertext := ccpc.Cipher().Seal(nil, nonce, plaintext, ad)
 	return ciphertext, nil
 }
 
 // Decrypt calls the underlying Seal function to extract the plaintext.
-func (ccpc *chaChaPolyCipher) Decrypt(n uint64, ad [ADSize]byte,
-	ciphertext []byte) ([]byte, error) {
+func (ccpc *chaChaPolyCipher) Decrypt(
+	n uint64, ad, ciphertext []byte) ([]byte, error) {
 	// nonce must be less than 2^64-1
 	if n == MaxNonce {
 		return nil, ErrNonceOverflow
 	}
 
 	nonce := ccpc.EncodeNonce(n)
-	plaintext, err := ccpc.Cipher().Open(nil, nonce, ciphertext, ad[:])
+	plaintext, err := ccpc.Cipher().Open(nil, nonce, ciphertext, ad)
 	if err != nil {
 		return nil, err
 	}
@@ -68,11 +68,11 @@ func (ccpc *chaChaPolyCipher) InitCipher(key [KeySize]byte) error {
 	return nil
 }
 
-// Rekey updates the cipher's key by calling InitCipher.
+// Rekey updates the cipher's key by calling InitCipher, returns the new key.
 //
 // Note that instead of calling Encrypt as specified in the noise specs, it
 // directly calls cipher.Seal to bypass the nonce and ad size check in Encrypt.
-func (ccpc *chaChaPolyCipher) Rekey() error {
+func (ccpc *chaChaPolyCipher) Rekey() ([KeySize]byte, error) {
 	var newKey [KeySize]byte
 
 	nonce := ccpc.EncodeNonce(MaxNonce)
@@ -81,7 +81,7 @@ func (ccpc *chaChaPolyCipher) Rekey() error {
 
 	// InitCipher has no error, safe to ignore
 	ccpc.InitCipher(newKey)
-	return nil
+	return newKey, nil
 }
 
 func (ccpc *chaChaPolyCipher) String() string {

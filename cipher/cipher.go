@@ -52,7 +52,7 @@ type AEAD interface {
 	// Decrypt uses a cipher key k of 32 bytes, an 8-byte unsigned integer nonce
 	// n, and associated data ad, and returns the plaintext, unless
 	// authentication fails, in which case an error is returned.
-	Decrypt(n uint64, ad [ADSize]byte, ciphertext []byte) ([]byte, error)
+	Decrypt(n uint64, ad, ciphertext []byte) ([]byte, error)
 
 	// EncodeNonce turns the nonce used in the noise protocol into a format
 	// that's accepted by the specific cipher specs.
@@ -63,7 +63,7 @@ type AEAD interface {
 	// Encryption must be done with an "AEAD" encryption mode with the
 	// associated data ad and returns a ciphertext that is the same size as the
 	// plaintext plus 16 bytes for authentication data.
-	Encrypt(n uint64, ad [ADSize]byte, plaintext []byte) ([]byte, error)
+	Encrypt(n uint64, ad, plaintext []byte) ([]byte, error)
 
 	// InitCipher creates a cipher with the secret key.
 	InitCipher(key [KeySize]byte) error
@@ -79,7 +79,7 @@ type AEAD interface {
 	// Note that Rekey only updates the cipher's key value, it doesn't reset the
 	// cipher's nonce value, so applications performing Rekey must still perform
 	// a new handshake if sending 2^64 or more transport messages.
-	Rekey() error
+	Rekey() ([KeySize]byte, error)
 }
 
 // FromString uses the provided cipher name, s, to query a built-in cipher.
