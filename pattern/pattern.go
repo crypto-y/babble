@@ -33,10 +33,10 @@ type HandshakePattern struct {
 	Pattern string
 
 	// MessagePattern stores the tokenized message pattern.
-	MessagePattern *pattern
+	MessagePattern pattern
 
 	// PreMessagePattern stores the tokenized pre-message pattern.
-	PreMessagePattern *pattern
+	PreMessagePattern pattern
 }
 
 // loadPattern takes a handskake pattern string, and turns it into a
@@ -64,7 +64,7 @@ func (hp *HandshakePattern) loadPattern() error {
 	if err != nil {
 		return err
 	}
-	hp.MessagePattern = &mp
+	hp.MessagePattern = mp
 
 	if preMessages == "" {
 		return nil
@@ -75,7 +75,7 @@ func (hp *HandshakePattern) loadPattern() error {
 	if err != nil {
 		return err
 	}
-	hp.PreMessagePattern = &pmm
+	hp.PreMessagePattern = pmm
 
 	return nil
 }

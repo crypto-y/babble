@@ -8,25 +8,25 @@ import (
 type token string
 
 const (
-	// token e
-	tokenE = token("e")
-	// token s
-	tokenS = token("s")
-	// token ee
-	tokenEe = token("ee")
-	// token es
-	tokenEs = token("es")
-	// token se
-	tokenSe = token("se")
-	// token ss
-	tokenSs = token("ss")
-	// token psk
-	tokenPsk = token("psk")
+	// TokenE is the e from noise specs.
+	TokenE = token("e")
+	// TokenS is the s from noise specs.
+	TokenS = token("s")
+	// TokenEe is the ee from noise specs.
+	TokenEe = token("ee")
+	// TokenEs is the es from noise specs.
+	TokenEs = token("es")
+	// TokenSe is the se from noise specs.
+	TokenSe = token("se")
+	// TokenSs is the ss from noise specs.
+	TokenSs = token("ss")
+	// TokenPsk is the psk from noise specs.
+	TokenPsk = token("psk")
 
-	// tokenInitiator indicates the message is sent from initiator to responder.
-	tokenInitiator = token("->")
-	// tokenResponder indicates the message is sent from responder to initiator.
-	tokenResponder = token("<-")
+	// TokenInitiator indicates the message is sent from initiator to responder.
+	TokenInitiator = token("->")
+	// TokenResponder indicates the message is sent from responder to initiator.
+	TokenResponder = token("<-")
 
 	tokenInvalid        = token("invalid")
 	preMessageIndicator = "..."
@@ -64,7 +64,7 @@ func parseMessageLine(l string) (patternLine, error) {
 	if err != nil {
 		return nil, err
 	}
-	if t != tokenResponder && t != tokenInitiator {
+	if t != TokenResponder && t != TokenInitiator {
 		return nil, errInvalidPattern(errInvalidLine, l)
 	}
 	pl = append(pl, t)
@@ -86,23 +86,23 @@ func parseMessageLine(l string) (patternLine, error) {
 func parseTokenFromString(s string) (token, error) {
 	switch s {
 	case "e":
-		return tokenE, nil
+		return TokenE, nil
 	case "s":
-		return tokenS, nil
+		return TokenS, nil
 	case "ee":
-		return tokenEe, nil
+		return TokenEe, nil
 	case "es":
-		return tokenEs, nil
+		return TokenEs, nil
 	case "se":
-		return tokenSe, nil
+		return TokenSe, nil
 	case "ss":
-		return tokenSs, nil
+		return TokenSs, nil
 	case "->":
-		return tokenInitiator, nil
+		return TokenInitiator, nil
 	case "<-":
-		return tokenResponder, nil
+		return TokenResponder, nil
 	case "psk":
-		return tokenPsk, nil
+		return TokenPsk, nil
 	default:
 		return tokenInvalid, fmt.Errorf("token %s is invalid", s)
 	}
@@ -163,7 +163,7 @@ func validatePattern(pl pattern, pre bool) error {
 
 	// checks that the first line in the message is an initiator token, with the
 	// exception when this is a pre-message pattern.
-	isInitiator := pl[0][0] == tokenInitiator
+	isInitiator := pl[0][0] == TokenInitiator
 	if !pre && isInitiator != true {
 		return errInvalidPattern(errMustBeInitiator)
 	}
@@ -172,7 +172,7 @@ func validatePattern(pl pattern, pre bool) error {
 	for _, line := range pl {
 		count := map[token]int{}
 
-		isInitiator = line[0] == tokenInitiator
+		isInitiator = line[0] == TokenInitiator
 		// In additional to the rules specified in the noise protocol, it's also
 		// required that the initiator/responder cannot send two consecutive
 		// messages, they must alternate. For instance,
@@ -190,12 +190,12 @@ func validatePattern(pl pattern, pre bool) error {
 		for _, token := range line[1:] {
 			// check rule 1 and 2 on each pattern line. Not that a "psk" token
 			// is allowed to appear one or more times in a handshake pattern.
-			if token != tokenPsk && count[token] > 0 {
+			if token != TokenPsk && count[token] > 0 {
 				return errInvalidPattern(errRepeatedTokens, token)
 			}
 
 			// a psk token is only allowed to appear in pre-message.
-			if token == tokenPsk && !pre {
+			if token == TokenPsk && !pre {
 				return errInvalidPattern(errPskNotAllowed)
 			}
 			count[token]++
@@ -204,33 +204,33 @@ func validatePattern(pl pattern, pre bool) error {
 			if isInitiator {
 				// check rule 3 and 4
 				switch token {
-				case tokenSe:
+				case TokenSe:
 					// must have seen an "ee" token before
-					if tokenSeen[tokenEe] < 1 {
+					if tokenSeen[TokenEe] < 1 {
 						return errInvalidPattern(
-							errMissingToken, tokenEe, tokenSe)
+							errMissingToken, TokenEe, TokenSe)
 					}
-				case tokenSs:
+				case TokenSs:
 					// must have seen an "es" token before
-					if tokenSeen[tokenEs] < 1 {
+					if tokenSeen[TokenEs] < 1 {
 						return errInvalidPattern(
-							errMissingToken, tokenEs, tokenSs)
+							errMissingToken, TokenEs, TokenSs)
 					}
 				}
 			} else {
 				// check rule 5 and 6
 				switch token {
-				case tokenEs:
+				case TokenEs:
 					// must have seen an "ee" token before
-					if tokenSeen[tokenEe] < 1 {
+					if tokenSeen[TokenEe] < 1 {
 						return errInvalidPattern(
-							errMissingToken, tokenEe, tokenEs)
+							errMissingToken, TokenEe, TokenEs)
 					}
-				case tokenSs:
+				case TokenSs:
 					// must have seen an "se" token before
-					if tokenSeen[tokenSe] < 1 {
+					if tokenSeen[TokenSe] < 1 {
 						return errInvalidPattern(
-							errMissingToken, tokenSe, tokenSs)
+							errMissingToken, TokenSe, TokenSs)
 					}
 				}
 			}

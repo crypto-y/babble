@@ -14,9 +14,9 @@ func TestParseMessageLine(t *testing.T) {
 		returnErr bool
 	}{
 		{"legal line: -> e, s", "-> e, s",
-			patternLine{tokenInitiator, tokenE, tokenS}, false},
+			patternLine{TokenInitiator, TokenE, TokenS}, false},
 		{"legal line: <- e, ee, se", "<- e, ee, se",
-			patternLine{tokenResponder, tokenE, tokenEe, tokenSe}, false},
+			patternLine{TokenResponder, TokenE, TokenEe, TokenSe}, false},
 		{"illegal line: less than 2 items", "->", nil, true},
 		{"illegal line: first item is not a token", "xxx, ->", nil, true},
 		{"illegal line: first item is wrong", "e ->", nil, true},
@@ -42,15 +42,15 @@ func TestParseTokenFromString(t *testing.T) {
 		name     string
 		expected token
 	}{
-		{"e", tokenE},
-		{"s", tokenS},
-		{"ee", tokenEe},
-		{"es", tokenEs},
-		{"se", tokenSe},
-		{"ss", tokenSs},
-		{"->", tokenInitiator},
-		{"<-", tokenResponder},
-		{"psk", tokenPsk},
+		{"e", TokenE},
+		{"s", TokenS},
+		{"ee", TokenEe},
+		{"es", TokenEs},
+		{"se", TokenSe},
+		{"ss", TokenSs},
+		{"->", TokenInitiator},
+		{"<-", TokenResponder},
+		{"psk", TokenPsk},
 		{"x", tokenInvalid},
 	}
 
@@ -77,75 +77,75 @@ func TestValidatePattern(t *testing.T) {
 	}{
 		{"valid pattern: single line", pattern{
 			// -> e
-			patternLine{tokenInitiator, tokenE},
+			patternLine{TokenInitiator, TokenE},
 		}, nil, false},
 		{"valid pattern: two lines", pattern{
 			//   -> e
 			//   <- e, ee
-			patternLine{tokenInitiator, tokenE},
-			patternLine{tokenResponder, tokenE, tokenEe},
+			patternLine{TokenInitiator, TokenE},
+			patternLine{TokenResponder, TokenE, TokenEe},
 		}, nil, false},
 		{"valid pattern: four lines", pattern{
 			//       -> e, es
 			//       <- e, ee
 			//       -> s
 			//       <- se
-			patternLine{tokenInitiator, tokenE, tokenEs},
-			patternLine{tokenResponder, tokenE, tokenEe},
-			patternLine{tokenInitiator, tokenEs},
-			patternLine{tokenResponder, tokenSe},
+			patternLine{TokenInitiator, TokenE, TokenEs},
+			patternLine{TokenResponder, TokenE, TokenEe},
+			patternLine{TokenInitiator, TokenEs},
+			patternLine{TokenResponder, TokenSe},
 		}, nil, false},
 		{"invalid pattern: first token must be initiator", pattern{
 			//   <- e
-			patternLine{tokenResponder, tokenE},
+			patternLine{TokenResponder, TokenE},
 		}, errInvalidPattern(errMustBeInitiator), false},
 		{"invalid pattern: first token can be responder in pre message",
 			pattern{
 				//   <- e
-				patternLine{tokenResponder, tokenE},
+				patternLine{TokenResponder, TokenE},
 			}, nil, true},
 		{"invalid pattern: two initiators", pattern{
 			//   -> e
 			//   -> e, ee
-			patternLine{tokenInitiator, tokenE},
-			patternLine{tokenInitiator, tokenE, tokenEe},
-		}, errInvalidPattern(errConsecutiveTokens, tokenInitiator), false},
+			patternLine{TokenInitiator, TokenE},
+			patternLine{TokenInitiator, TokenE, TokenEe},
+		}, errInvalidPattern(errConsecutiveTokens, TokenInitiator), false},
 		{"invalid pattern: repeated token e", pattern{
 			//   -> e, s
-			patternLine{tokenInitiator, tokenE, tokenE},
-		}, errInvalidPattern(errRepeatedTokens, tokenE), false},
+			patternLine{TokenInitiator, TokenE, TokenE},
+		}, errInvalidPattern(errRepeatedTokens, TokenE), false},
 		{"invalid pattern: repeated token es", pattern{
 			//   -> es, es
-			patternLine{tokenInitiator, tokenEs, tokenEs},
-		}, errInvalidPattern(errRepeatedTokens, tokenEs), false},
+			patternLine{TokenInitiator, TokenEs, TokenEs},
+		}, errInvalidPattern(errRepeatedTokens, TokenEs), false},
 		{"invalid pattern: token psk is not allowed in message", pattern{
 			//   -> psk
-			patternLine{tokenInitiator, tokenPsk},
+			patternLine{TokenInitiator, TokenPsk},
 		}, errInvalidPattern(errPskNotAllowed), false},
 		{"valid pattern: repeated token psk is allowed in pre", pattern{
 			// -> psk, psk
-			patternLine{tokenInitiator, tokenPsk, tokenPsk},
+			patternLine{TokenInitiator, TokenPsk, TokenPsk},
 		}, nil, true},
 		{"invalid pattern: initiator needs ee before se", pattern{
 			//   -> se
-			patternLine{tokenInitiator, tokenSe},
-		}, errInvalidPattern(errMissingToken, tokenEe, tokenSe), false},
+			patternLine{TokenInitiator, TokenSe},
+		}, errInvalidPattern(errMissingToken, TokenEe, TokenSe), false},
 		{"invalid pattern: initiator needs es before ss", pattern{
 			//   -> ss
-			patternLine{tokenInitiator, tokenSs},
-		}, errInvalidPattern(errMissingToken, tokenEs, tokenSs), false},
+			patternLine{TokenInitiator, TokenSs},
+		}, errInvalidPattern(errMissingToken, TokenEs, TokenSs), false},
 		{"invalid pattern: responder needs ee before es", pattern{
 			//   -> e
 			//   <- es
-			patternLine{tokenInitiator, tokenE},
-			patternLine{tokenResponder, tokenEs},
-		}, errInvalidPattern(errMissingToken, tokenEe, tokenEs), false},
+			patternLine{TokenInitiator, TokenE},
+			patternLine{TokenResponder, TokenEs},
+		}, errInvalidPattern(errMissingToken, TokenEe, TokenEs), false},
 		{"invalid pattern: responder needs se before ss", pattern{
 			//   -> e
 			//   <- ss
-			patternLine{tokenInitiator, tokenE},
-			patternLine{tokenResponder, tokenSs},
-		}, errInvalidPattern(errMissingToken, tokenSe, tokenSs), false},
+			patternLine{TokenInitiator, TokenE},
+			patternLine{TokenResponder, TokenSs},
+		}, errInvalidPattern(errMissingToken, TokenSe, TokenSs), false},
 	}
 
 	for _, tt := range testParams {
@@ -167,14 +167,14 @@ func TestTokenize(t *testing.T) {
 		{"tokenize a normal message", `
 			-> e
 			<- e, ee`, pattern{
-			patternLine{tokenInitiator, tokenE},
-			patternLine{tokenResponder, tokenE, tokenEe},
+			patternLine{TokenInitiator, TokenE},
+			patternLine{TokenResponder, TokenE, TokenEe},
 		}, false, false},
 		{"tokenize a pre-message", `
 			<- s
 			-> s`, pattern{
-			patternLine{tokenResponder, tokenS},
-			patternLine{tokenInitiator, tokenS},
+			patternLine{TokenResponder, TokenS},
+			patternLine{TokenInitiator, TokenS},
 		}, true, false},
 		{"wrong line", `
 			<-
