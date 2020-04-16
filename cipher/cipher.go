@@ -79,7 +79,7 @@ type AEAD interface {
 	// Note that Rekey only updates the cipher's key value, it doesn't reset the
 	// cipher's nonce value, so applications performing Rekey must still perform
 	// a new handshake if sending 2^64 or more transport messages.
-	Rekey() ([KeySize]byte, error)
+	Rekey(key [KeySize]byte) ([]byte, error)
 }
 
 // FromString uses the provided cipher name, s, to query a built-in cipher.
