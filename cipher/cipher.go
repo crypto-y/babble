@@ -74,6 +74,9 @@ type AEAD interface {
 	//  - ad as zerolen, a zero-length byte sequence,
 	//  - plaintext as zeros, a sequence of 32 bytes filled with zeros.
 	Rekey() [KeySize]byte
+
+	// Reset cleans all the states to zero value, if any.
+	Reset()
 }
 
 // FromString uses the provided cipher name, s, to query a built-in cipher.

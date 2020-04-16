@@ -86,6 +86,11 @@ func (agc *aESGCMCipher) Rekey() [KeySize]byte {
 	return newKey
 }
 
+// Reset removes the cipher.
+func (agc *aESGCMCipher) Reset() {
+	agc.cipher = nil
+}
+
 func (agc *aESGCMCipher) String() string {
 	return "AESGCM"
 }

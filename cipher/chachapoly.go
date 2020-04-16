@@ -82,6 +82,11 @@ func (ccpc *chaChaPolyCipher) Rekey() [KeySize]byte {
 	return newKey
 }
 
+// Reset removes the cipher.
+func (ccpc *chaChaPolyCipher) Reset() {
+	ccpc.cipher = nil
+}
+
 func (ccpc *chaChaPolyCipher) String() string {
 	return "ChaChaPoly"
 }

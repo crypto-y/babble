@@ -84,6 +84,10 @@ func TestAESGCM(t *testing.T) {
 	require.NotEqual(t, newCiphertext, newCiphertextX,
 		"ciphertexts should be different")
 	require.NotEqual(t, newKey, newKeyX, "key should change again")
+
+	// test reset
+	aesgcm.Reset()
+	require.Nil(t, aesgcm.Cipher(), "cipher is not nil")
 }
 
 func TestChaChaPoly(t *testing.T) {
@@ -141,6 +145,10 @@ func TestChaChaPoly(t *testing.T) {
 	require.NotEqual(t, newCiphertext, newCiphertextX,
 		"ciphertexts should be different")
 	require.NotEqual(t, newKey, newKeyX, "key should change again")
+
+	// test reset
+	ChaChaPoly.Reset()
+	require.Nil(t, ChaChaPoly.Cipher(), "cipher is not nil")
 }
 
 func TestSetUp(t *testing.T) {
