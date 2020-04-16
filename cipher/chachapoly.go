@@ -72,22 +72,14 @@ func (ccpc *chaChaPolyCipher) InitCipher(key [KeySize]byte) error {
 //
 // Note that instead of calling Encrypt as specified in the noise specs, it
 // directly calls cipher.Seal to bypass the nonce and ad size check in Encrypt.
-func (ccpc *chaChaPolyCipher) Rekey(k [KeySize]byte) ([]byte, error) {
+func (ccpc *chaChaPolyCipher) Rekey() [KeySize]byte {
 	var newKey [KeySize]byte
-	// if a new key is supplied, use it instead of the default derivation.
-	if k != ZEROS {
-		copy(newKey[:], k[:])
-		ccpc.InitCipher(newKey)
-		return newKey[:], nil
-	}
 
 	nonce := ccpc.EncodeNonce(MaxNonce)
 	key := ccpc.Cipher().Seal(nil, nonce, ZEROS[:], ZEROLEN)
 	copy(newKey[:], key)
 
-	// InitCipher has no error, safe to ignore
-	ccpc.InitCipher(newKey)
-	return newKey[:], nil
+	return newKey
 }
 
 func (ccpc *chaChaPolyCipher) String() string {

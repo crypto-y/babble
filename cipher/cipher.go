@@ -68,18 +68,12 @@ type AEAD interface {
 	// InitCipher creates a cipher with the secret key.
 	InitCipher(key [KeySize]byte) error
 
-	// Rekey resets a new 32-byte cipher key as a pseudorandom function of key.
-	// If this function is not specifically defined for some set of cipher
-	// functions, then it defaults returning the first 32 bytes from calling
-	// Encrypt with,
+	// Rekey creates a new 32-byte cipher key as a pseudorandom function of key.
+	// It returns the first 32 bytes from calling Encrypt with,
 	//  - n as maxnonce, which equals 2^64-1,
 	//  - ad as zerolen, a zero-length byte sequence,
 	//  - plaintext as zeros, a sequence of 32 bytes filled with zeros.
-	//
-	// Note that Rekey only updates the cipher's key value, it doesn't reset the
-	// cipher's nonce value, so applications performing Rekey must still perform
-	// a new handshake if sending 2^64 or more transport messages.
-	Rekey(key [KeySize]byte) ([]byte, error)
+	Rekey() [KeySize]byte
 }
 
 // FromString uses the provided cipher name, s, to query a built-in cipher.
