@@ -36,7 +36,7 @@ func TestGenerateKeyPair448(t *testing.T) {
 		}
 	)
 
-	// supply 32-byte entropy
+	// supply 56-byte entropy
 	privKey, _ := x448.GenerateKeyPair(priv[:])
 
 	require.Equal(t, priv[:], privKey.Bytes(),
@@ -46,8 +46,8 @@ func TestGenerateKeyPair448(t *testing.T) {
 	require.Equal(t, pubHex, privKey.PubKey().Hex(),
 		"public key string doesn't match")
 
-	// make an entropy greater than 32-byte. The function should only take the
-	// first 32-byte.
+	// make an entropy greater than 56-byte. The function should only take the
+	// first 56-byte.
 	var extra []byte
 	extra = append(extra, priv[:]...)
 	extra = append(extra, byte(0x01))

@@ -127,8 +127,10 @@ func (dh *curveBitcoin) String() string {
 	return "secp256k1"
 }
 
+func newCurveBitcoin() Curve {
+	return &curveBitcoin{DHLEN: dhlenBitcoin}
+}
+
 func init() {
-	// secp256k1 implements the DH interface for the Bitcoin curve.
-	var secp256k1 Curve = &curveBitcoin{DHLEN: dhlenBitcoin}
-	Register(secp256k1.String(), secp256k1)
+	Register("secp256k1", newCurveBitcoin)
 }

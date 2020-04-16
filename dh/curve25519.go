@@ -107,8 +107,10 @@ func (dh *curve25519) String() string {
 	return "25519"
 }
 
+func newCurve25519() Curve {
+	return &curve25519{DHLEN: dhlen25519}
+}
+
 func init() {
-	// x25519 implements the DH interface for curve25519.
-	var x25519 Curve = &curve25519{DHLEN: dhlen25519}
-	Register(x25519.String(), x25519)
+	Register("25519", newCurve25519)
 }

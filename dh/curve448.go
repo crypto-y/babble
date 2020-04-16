@@ -107,8 +107,10 @@ func (c *curve448) String() string {
 	return "448"
 }
 
+func newCurve448() Curve {
+	return &curve448{DHLEN: dhlen448}
+}
+
 func init() {
-	// X448 implements the DH interface for curve448.
-	var x448 Curve = &curve448{DHLEN: dhlen448}
-	Register(x448.String(), x448)
+	Register("448", newCurve448)
 }

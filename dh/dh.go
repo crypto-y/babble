@@ -20,8 +20,11 @@ var (
 	// ErrMismatchedPublicKey is returned when the public key fails to match.
 	ErrMismatchedPublicKey = errors.New("public key mismatch")
 
-	supportedCurves = map[string]Curve{}
+	supportedCurves = map[string]newCurve{}
 )
+
+// newCurve creates an Curve instance.
+type newCurve func() Curve
 
 // PublicKey represents a public key. The only place to use it is during a DHKE,
 // a public key struct is passed into the DH function.
@@ -77,13 +80,20 @@ type Curve interface {
 
 // FromString uses the provided curve name, s, to query a built-in curve.
 func FromString(s string) Curve {
-	return supportedCurves[s]
+	if supportedCurves[s] != nil {
+		return supportedCurves[s]()
+	}
+	return nil
 }
 
 // Register updates the supported curves used in package dh.
-func Register(s string, c Curve) {
+func Register(s string, new newCurve) {
 	// TODO: check registry
-	supportedCurves[s] = c
+
+	// check the AEAD interface is matched
+	var _ Curve = new()
+
+	supportedCurves[s] = new
 }
 
 // SupportedCurves gives the names of all the curves registered. If no new
