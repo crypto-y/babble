@@ -95,9 +95,13 @@ func (agc *aESGCMCipher) String() string {
 	return "AESGCM"
 }
 
+func newAESGCM() AEAD {
+	return &aESGCMCipher{}
+}
+
 func init() {
 	// aESGCM is the instance of aESGCMCipher, exported as supported ciphers.
-	var aesgcm AEAD = &aESGCMCipher{}
+	// var aesgcm AEAD = &aESGCMCipher{}
 
-	Register(aesgcm.String(), aesgcm)
+	Register("AESGCM", newAESGCM)
 }

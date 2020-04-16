@@ -33,6 +33,8 @@ func TestAESGCM(t *testing.T) {
 	aesgcm := cipher.FromString("AESGCM")
 	aesgcm.InitCipher(key)
 
+	require.Equal(t, "AESGCM", aesgcm.String(), "name should match")
+
 	// first we encrypt the message
 	ciphertext, _ := aesgcm.Encrypt(nonce, ad, message)
 	// then we decrypt the ciphertext, the returned value should equal message
@@ -93,6 +95,8 @@ func TestAESGCM(t *testing.T) {
 func TestChaChaPoly(t *testing.T) {
 	ChaChaPoly := cipher.FromString("ChaChaPoly")
 	ChaChaPoly.InitCipher(key)
+
+	require.Equal(t, "ChaChaPoly", ChaChaPoly.String(), "name should match")
 
 	// first we encrypt the message
 	ciphertext, _ := ChaChaPoly.Encrypt(nonce, ad, message)

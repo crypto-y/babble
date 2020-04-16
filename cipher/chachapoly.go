@@ -91,9 +91,13 @@ func (ccpc *chaChaPolyCipher) String() string {
 	return "ChaChaPoly"
 }
 
+func newChaChaPoly() AEAD {
+	return &chaChaPolyCipher{}
+}
+
 func init() {
 	// chaChaPoly is an instance of chaChaPolyCipher, exported as supported
 	// ciphers.
-	var chaChaPoly AEAD = &chaChaPolyCipher{}
-	Register(chaChaPoly.String(), chaChaPoly)
+	// var chaChaPoly AEAD = &chaChaPolyCipher{}
+	Register("ChaChaPoly", newChaChaPoly)
 }
