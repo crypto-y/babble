@@ -50,6 +50,8 @@ func TestHash(t *testing.T) {
 		name := "test hash " + tt.name
 		t.Run(name, func(t *testing.T) {
 			h := hash.FromString(tt.name)
+			// hash name
+			require.Equal(t, tt.name, h.String(), "name mismatch")
 			// block len
 			require.Equal(t, tt.blockLen, h.BlockLen(), "block len mismatch")
 			// hash len

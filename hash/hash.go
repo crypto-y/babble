@@ -12,13 +12,11 @@ import (
 )
 
 var (
-	byte00 = []byte{0}
-	byte01 = []byte{1}
-	byte02 = []byte{2}
-	byte03 = []byte{3}
-
-	supportedHashes = map[string]Hash{}
+	supportedHashes = map[string]NewHash{}
 )
+
+// NewHash returns an instance of Hash.
+type NewHash func() Hash
 
 // Hash defines a hash interface specified by the noise specs.
 type Hash interface {
@@ -46,13 +44,20 @@ type Hash interface {
 
 // FromString uses the provided hash name, s, to query a built-in hash.
 func FromString(s string) Hash {
-	return supportedHashes[s]
+	if supportedHashes[s] != nil {
+		return supportedHashes[s]()
+	}
+	return nil
 }
 
 // Register updates the supported hashes used in package hash.
-func Register(s string, a Hash) {
+func Register(s string, new NewHash) {
 	// TODO: check registry
-	supportedHashes[s] = a
+
+	// check the Hash interface is matched
+	var _ Hash = new()
+
+	supportedHashes[s] = new
 }
 
 // SupportedHashes gives the names of all the hashs registered. If no new

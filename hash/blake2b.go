@@ -38,11 +38,14 @@ func (s *hashBLAKE2b) Reset() {
 	s.New().Reset()
 }
 
-func init() {
-	var blake2bHash, _ = blake2b.New512(nil)
-	var noiseBLAKE2b Hash = &hashBLAKE2b{
+func newBlake2b() Hash {
+	blake2bHash, _ := blake2b.New512(nil)
+	return &hashBLAKE2b{
 		name: "BLAKE2b",
 		h:    blake2bHash,
 	}
-	Register(noiseBLAKE2b.String(), noiseBLAKE2b)
+}
+
+func init() {
+	Register("BLAKE2b", newBlake2b)
 }

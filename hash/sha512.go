@@ -37,10 +37,13 @@ func (s *hashSha512) Reset() {
 	s.New().Reset()
 }
 
-func init() {
-	var noiseSha512 Hash = &hashSha512{
+func newSha512() Hash {
+	return &hashSha512{
 		name: "SHA512",
 		h:    sha512.New(),
 	}
-	Register(noiseSha512.String(), noiseSha512)
+}
+
+func init() {
+	Register("SHA512", newSha512)
 }

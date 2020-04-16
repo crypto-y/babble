@@ -37,10 +37,13 @@ func (s *hashSha256) Reset() {
 	s.New().Reset()
 }
 
-func init() {
-	var noiseSha256 Hash = &hashSha256{
+func newSha256() Hash {
+	return &hashSha256{
 		name: "SHA256",
 		h:    sha256.New(),
 	}
-	Register(noiseSha256.String(), noiseSha256)
+}
+
+func init() {
+	Register("SHA256", newSha256)
 }
