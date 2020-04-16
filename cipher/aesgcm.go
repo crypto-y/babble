@@ -100,8 +100,5 @@ func newAESGCM() AEAD {
 }
 
 func init() {
-	// aESGCM is the instance of aESGCMCipher, exported as supported ciphers.
-	// var aesgcm AEAD = &aESGCMCipher{}
-
 	Register("AESGCM", newAESGCM)
 }

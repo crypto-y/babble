@@ -38,11 +38,11 @@ var (
 	// ZEROS is a 32-byte array filled with zeros.
 	ZEROS [KeySize]byte
 
-	supportedCiphers = map[string]newCipher{}
+	supportedCiphers = map[string]NewCipher{}
 )
 
-// newCipher returns an instance of a cipher.
-type newCipher func() AEAD
+// NewCipher returns an instance of a cipher.
+type NewCipher func() AEAD
 
 // AEAD specifies an interface for building a cipher used by the noise package.
 type AEAD interface {
@@ -91,7 +91,7 @@ func FromString(s string) AEAD {
 }
 
 // Register updates the supported ciphers used in package cipher.
-func Register(s string, f newCipher) {
+func Register(s string, f NewCipher) {
 	// TODO: check registry
 
 	// check the AEAD interface is matched

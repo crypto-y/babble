@@ -96,8 +96,5 @@ func newChaChaPoly() AEAD {
 }
 
 func init() {
-	// chaChaPoly is an instance of chaChaPolyCipher, exported as supported
-	// ciphers.
-	// var chaChaPoly AEAD = &chaChaPolyCipher{}
 	Register("ChaChaPoly", newChaChaPoly)
 }
