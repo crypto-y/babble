@@ -118,14 +118,14 @@ func TestValidatePattern(t *testing.T) {
 			//   -> es, es
 			patternLine{TokenInitiator, TokenEs, TokenEs},
 		}, errInvalidPattern(errRepeatedTokens, TokenEs), false},
-		{"invalid pattern: token psk is not allowed in message", pattern{
+		{"invalid pattern: token psk is not allowed in pre-message", pattern{
 			//   -> psk
 			patternLine{TokenInitiator, TokenPsk},
-		}, errInvalidPattern(errPskNotAllowed), false},
-		{"valid pattern: repeated token psk is allowed in pre", pattern{
+		}, errInvalidPattern(errPskNotAllowed), true},
+		{"valid pattern: repeated token psk is allowed in message", pattern{
 			// -> psk, psk
 			patternLine{TokenInitiator, TokenPsk, TokenPsk},
-		}, nil, true},
+		}, nil, false},
 		{"invalid pattern: initiator needs ee before se", pattern{
 			//   -> se
 			patternLine{TokenInitiator, TokenSe},

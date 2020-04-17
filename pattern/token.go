@@ -194,8 +194,8 @@ func validatePattern(pl pattern, pre bool) error {
 				return errInvalidPattern(errRepeatedTokens, token)
 			}
 
-			// a psk token is only allowed to appear in pre-message.
-			if token == TokenPsk && !pre {
+			// a psk token is not allowed to appear in pre-message.
+			if token == TokenPsk && pre {
 				return errInvalidPattern(errPskNotAllowed)
 			}
 			count[token]++

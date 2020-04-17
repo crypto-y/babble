@@ -8,8 +8,12 @@ import (
 )
 
 var (
-	errWrongPreMessage = errors.New("invalid pattern")
-	supportedPatterns  = make(map[string]*HandshakePattern)
+	supportedPatterns = make(map[string]*HandshakePattern)
+
+	patternNameRegex = `^[A-Z0-9]+`
+
+	errWrongPreMessage    = errors.New("invalid pattern")
+	errInvalidPatternName = errors.New("invalid handshake pattern name")
 )
 
 // HandshakePattern represents a noise handshake pattern. It has a strict
