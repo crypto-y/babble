@@ -43,7 +43,7 @@ profile.tmp
 .DS_Store
 
 .vscode
-.code-workspace
+*.code-workspace
 sample.*
 
 *.tmp
