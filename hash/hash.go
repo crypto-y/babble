@@ -43,11 +43,11 @@ type Hash interface {
 }
 
 // FromString uses the provided hash name, s, to query a built-in hash.
-func FromString(s string) Hash {
+func FromString(s string) (Hash, error) {
 	if supportedHashes[s] != nil {
-		return supportedHashes[s]()
+		return supportedHashes[s](), nil
 	}
-	return nil
+	return nil, errUnsupported(s)
 }
 
 // Register updates the supported hashes used in package hash.
@@ -69,4 +69,8 @@ func SupportedHashes() string {
 		keys = append(keys, k)
 	}
 	return strings.Join(keys, ", ")
+}
+
+func errUnsupported(s string) error {
+	return fmt.Errorf("hash: %s is unsupported", s)
 }

@@ -11,13 +11,26 @@ import (
 
 func TestSetUp(t *testing.T) {
 	// check supported hashes
-	require.NotNil(t, hash.FromString("SHA256"), "missing SHA256")
-	require.NotNil(t, hash.FromString("SHA512"), "missing SHA512")
-	require.NotNil(t, hash.FromString("BLAKE2s"), "missing BLAKE2s")
-	require.NotNil(t, hash.FromString("BLAKE2b"), "missing BLAKE2b")
+	sha256, err := hash.FromString("SHA256")
+	require.NotNil(t, sha256, "missing SHA256")
+	require.Nil(t, err, "should return no error")
+
+	sha512, err := hash.FromString("SHA512")
+	require.NotNil(t, sha512, "missing SHA512")
+	require.Nil(t, err, "should return no error")
+
+	blake2s, err := hash.FromString("BLAKE2s")
+	require.NotNil(t, blake2s, "missing BLAKE2s")
+	require.Nil(t, err, "should return no error")
+
+	blake2b, err := hash.FromString("BLAKE2b")
+	require.NotNil(t, blake2b, "missing BLAKE2b")
+	require.Nil(t, err, "should return no error")
 
 	// check return empty
-	require.Nil(t, hash.FromString("yy"), "yy does not exist, yet")
+	yy, err := hash.FromString("yy")
+	require.Nil(t, yy, "yy does not exist, yet")
+	require.NotNil(t, err, "should return an error")
 
 	require.Equal(t, len("BLAKE2b, BLAKE2s, SHA256, SHA512"),
 		len(hash.SupportedHashes()),
@@ -49,7 +62,9 @@ func TestHash(t *testing.T) {
 	for _, tt := range testParams {
 		name := "test hash " + tt.name
 		t.Run(name, func(t *testing.T) {
-			h := hash.FromString(tt.name)
+			h, err := hash.FromString(tt.name)
+			// no error
+			require.Nil(t, err, "no error should be returned")
 			// hash name
 			require.Equal(t, tt.name, h.String(), "name mismatch")
 			// block len
@@ -72,18 +87,18 @@ func TestHash(t *testing.T) {
 
 func ExampleFromString() {
 	// load hash sha256
-	sha256 := hash.FromString("SHA256")
+	sha256, _ := hash.FromString("SHA256")
 	fmt.Println(sha256)
 
 	// load hash sha512
-	sha512 := hash.FromString("SHA512")
+	sha512, _ := hash.FromString("SHA512")
 	fmt.Println(sha512)
 
 	// load hash blake2s
-	blake2s := hash.FromString("BLAKE2s")
+	blake2s, _ := hash.FromString("BLAKE2s")
 	fmt.Println(blake2s)
 
 	// load hash blake2b
-	blake2b := hash.FromString("BLAKE2b")
+	blake2b, _ := hash.FromString("BLAKE2b")
 	fmt.Println(blake2b)
 }
