@@ -30,7 +30,7 @@ var (
 )
 
 func TestAESGCM(t *testing.T) {
-	aesgcm := cipher.FromString("AESGCM")
+	aesgcm, _ := cipher.FromString("AESGCM")
 	aesgcm.InitCipher(key)
 
 	require.Equal(t, "AESGCM", aesgcm.String(), "name should match")
@@ -93,7 +93,7 @@ func TestAESGCM(t *testing.T) {
 }
 
 func TestChaChaPoly(t *testing.T) {
-	ChaChaPoly := cipher.FromString("ChaChaPoly")
+	ChaChaPoly, _ := cipher.FromString("ChaChaPoly")
 	ChaChaPoly.InitCipher(key)
 
 	require.Equal(t, "ChaChaPoly", ChaChaPoly.String(), "name should match")
@@ -157,11 +157,17 @@ func TestChaChaPoly(t *testing.T) {
 
 func TestSetUp(t *testing.T) {
 	// check supported curves
-	require.NotNil(t, cipher.FromString("AESGCM"), "missing AESGCM")
-	require.NotNil(t, cipher.FromString("ChaChaPoly"), "missing ChaChaPoly")
+	aesgcm, err := cipher.FromString("AESGCM")
+	require.NotNil(t, aesgcm, "missing AESGCM")
+	require.Nil(t, err, "should return no error")
+	chacha, err := cipher.FromString("ChaChaPoly")
+	require.NotNil(t, chacha, "missing ChaChaPoly")
+	require.Nil(t, err, "should return no error")
 
 	// check return empty
-	require.Nil(t, cipher.FromString("yy"), "yy does not exist, yet")
+	c, err := cipher.FromString("yy")
+	require.Nil(t, c, "yy does not exist, yet")
+	require.NotNil(t, err, "should return an error")
 
 	require.Equal(t, len("AESGCM, ChaChaPoly"),
 		len(cipher.SupportedCiphers()),
@@ -169,10 +175,10 @@ func TestSetUp(t *testing.T) {
 }
 func ExampleFromString() {
 	// load cipher AESGCM
-	aesgcm := cipher.FromString("AESGCM")
+	aesgcm, _ := cipher.FromString("AESGCM")
 	fmt.Println(aesgcm)
 
 	// load cipher ChaChaPoly
-	ccp := cipher.FromString("ChaChaPoly")
+	ccp, _ := cipher.FromString("ChaChaPoly")
 	fmt.Println(ccp)
 }

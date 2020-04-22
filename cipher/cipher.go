@@ -83,11 +83,11 @@ type AEAD interface {
 }
 
 // FromString uses the provided cipher name, s, to query a built-in cipher.
-func FromString(s string) AEAD {
+func FromString(s string) (AEAD, error) {
 	if supportedCiphers[s] != nil {
-		return supportedCiphers[s]()
+		return supportedCiphers[s](), nil
 	}
-	return nil
+	return nil, errUnsupported(s)
 }
 
 // Register updates the supported ciphers used in package cipher.
@@ -109,4 +109,8 @@ func SupportedCiphers() string {
 		keys = append(keys, k)
 	}
 	return strings.Join(keys, ", ")
+}
+
+func errUnsupported(s string) error {
+	return fmt.Errorf("cipher: %s is unsupported", s)
 }
