@@ -10,14 +10,14 @@ import (
 )
 
 var (
-	cipherA = noiseCipher.FromString("AESGCM")
-	cipherB = noiseCipher.FromString("AESGCM")
+	cipherA, _ = noiseCipher.FromString("AESGCM")
+	cipherB, _ = noiseCipher.FromString("AESGCM")
 
-	hashA = noiseHash.FromString("SHA256")
-	hashB = noiseHash.FromString("SHA256")
+	hashA, _ = noiseHash.FromString("SHA256")
+	hashB, _ = noiseHash.FromString("SHA256")
 
-	curveA = noiseCurve.FromString("25519")
-	curveB = noiseCurve.FromString("25519")
+	curveA, _ = noiseCurve.FromString("25519")
+	curveB, _ = noiseCurve.FromString("25519")
 
 	key = [CipherKeySize]byte{
 		0xa8, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
