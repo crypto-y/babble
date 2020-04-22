@@ -2,6 +2,7 @@
 package pattern
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -41,6 +42,10 @@ type HandshakePattern struct {
 
 	// PreMessagePattern stores the tokenized pre-message pattern.
 	PreMessagePattern pattern
+}
+
+func (hp *HandshakePattern) String() string {
+	return hp.Name
 }
 
 // loadPattern takes a handskake pattern string, and turns it into a
@@ -85,8 +90,11 @@ func (hp *HandshakePattern) loadPattern() error {
 }
 
 // FromString uses the provided name, s, to query a built-in handshake pattern.
-func FromString(s string) *HandshakePattern {
-	return supportedPatterns[s]
+func FromString(s string) (*HandshakePattern, error) {
+	if supportedPatterns[s] != nil {
+		return supportedPatterns[s], nil
+	}
+	return nil, errUnsupported(s)
 }
 
 // Register creates a new handshake pattern with the name and pattern. The
@@ -114,4 +122,8 @@ func SupportedPatterns() string {
 		keys = append(keys, k)
 	}
 	return strings.Join(keys, ", ")
+}
+
+func errUnsupported(s string) error {
+	return fmt.Errorf("pattern: %s is unsupported", s)
 }

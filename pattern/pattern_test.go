@@ -23,12 +23,22 @@ func TestSetUp(t *testing.T) {
 	// check supported patterns
 	//
 	// one-way
-	require.NotNil(t, pattern.FromString("N"), "missing N")
-	require.NotNil(t, pattern.FromString("X"), "missing X")
-	require.NotNil(t, pattern.FromString("K"), "missing K")
+	n, err := pattern.FromString("N")
+	require.NotNil(t, n, "missing N")
+	require.Nil(t, err, "should not return an error")
+
+	x, err := pattern.FromString("X")
+	require.NotNil(t, x, "missing X")
+	require.Nil(t, err, "should not return an error")
+
+	k, err := pattern.FromString("K")
+	require.NotNil(t, k, "missing K")
+	require.Nil(t, err, "should not return an error")
 
 	// check return empty
-	require.Nil(t, pattern.FromString("yy"), "yy does not exist, yet")
+	yy, err := pattern.FromString("yy")
+	require.Nil(t, yy, "yy does not exist, yet")
+	require.NotNil(t, err, "should return an error")
 
 	require.Equal(t, len(strings.Join(supported, ", ")),
 		len(pattern.SupportedPatterns()),
@@ -71,7 +81,7 @@ func TestRegister(t *testing.T) {
 	for _, tt := range testParams {
 		t.Run(tt.name, func(t *testing.T) {
 			err := pattern.Register(tt.patternName, tt.pattern)
-			hp := pattern.FromString(tt.patternName)
+			hp, _ := pattern.FromString(tt.patternName)
 			if tt.hasErr {
 				require.NotNil(t, err, "should return an error")
 				require.Nil(t, hp, "should not return a pattern")
@@ -79,7 +89,7 @@ func TestRegister(t *testing.T) {
 				require.Nil(t, err, "should return no error")
 				require.NotNil(t, hp, "pattern should exist")
 				require.Equal(t, tt.pattern, hp.Pattern, "pattern not match")
-				require.Equal(t, tt.patternName, hp.Name, "name not match")
+				require.Equal(t, tt.patternName, hp.String(), "name not match")
 			}
 		})
 	}
@@ -101,6 +111,6 @@ func ExampleRegister() {
 
 func ExampleFromString() {
 	// use the pattern NX
-	p := pattern.FromString("NX")
+	p, _ := pattern.FromString("NX")
 	fmt.Println(p)
 }
