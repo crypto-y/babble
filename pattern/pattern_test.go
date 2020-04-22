@@ -1,4 +1,4 @@
-package pattern_test
+package pattern
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/yyforyongyu/noise/pattern"
+	// "github.com/yyforyongyu/noise/pattern"
 )
 
 func TestSetUp(t *testing.T) {
@@ -23,25 +23,25 @@ func TestSetUp(t *testing.T) {
 	// check supported patterns
 	//
 	// one-way
-	n, err := pattern.FromString("N")
+	n, err := FromString("N")
 	require.NotNil(t, n, "missing N")
 	require.Nil(t, err, "should not return an error")
 
-	x, err := pattern.FromString("X")
+	x, err := FromString("X")
 	require.NotNil(t, x, "missing X")
 	require.Nil(t, err, "should not return an error")
 
-	k, err := pattern.FromString("K")
+	k, err := FromString("K")
 	require.NotNil(t, k, "missing K")
 	require.Nil(t, err, "should not return an error")
 
 	// check return empty
-	yy, err := pattern.FromString("yy")
+	yy, err := FromString("yy")
 	require.Nil(t, yy, "yy does not exist, yet")
 	require.NotNil(t, err, "should return an error")
 
 	require.Equal(t, len(strings.Join(supported, ", ")),
-		len(pattern.SupportedPatterns()),
+		len(SupportedPatterns()),
 		"supported patterns should be 3+12+23=38")
 }
 
@@ -61,6 +61,10 @@ func TestRegister(t *testing.T) {
 			-> e
 			<- e, ee
 		`, false},
+		{"wrong pattern name", "nxx", `
+			-> e
+			<- e, ee
+		`, true},
 		{"wrong pattern format", "NKXI", `
 			<- s
 			...
@@ -76,12 +80,32 @@ func TestRegister(t *testing.T) {
 			-> e, se
 			<- e, ee
 		`, true},
+		{"missing psk token", "NX1fallback", `
+			-> e
+		`, false},
+		{"missing psk token", "NX2psk0", `
+			-> e
+		`, true},
+		{"valid psk format", "NX3psk0", `
+			-> psk, e
+		`, false},
+		{"wrong psk index length", "NX4psk1", `
+			-> psk, e
+		`, true},
+		{"wrong psk ending position", "NX5psk1", `
+			-> e
+			<- psk, e
+		`, true},
+		{"wrong psk line position", "NX6psk0", `
+			-> e, psk
+			<- e
+		`, true},
 	}
 
 	for _, tt := range testParams {
 		t.Run(tt.name, func(t *testing.T) {
-			err := pattern.Register(tt.patternName, tt.pattern)
-			hp, _ := pattern.FromString(tt.patternName)
+			err := Register(tt.patternName, tt.pattern)
+			hp, _ := FromString(tt.patternName)
 			if tt.hasErr {
 				require.NotNil(t, err, "should return an error")
 				require.Nil(t, hp, "should not return a pattern")
@@ -95,15 +119,56 @@ func TestRegister(t *testing.T) {
 	}
 }
 
+func TestParseModifiers(t *testing.T) {
+	testParams := []struct {
+		name        string
+		patternName string
+		errExpected error
+		modExpected *Modifier
+	}{
+		{"parse a name with no modifers", "NX1", nil, nil},
+		{"parse a name with a fallback modifiers", "NX1fallback", nil, &Modifier{
+			fallback: true},
+		},
+		{"parse a name with a psk modifiers", "NX1psk0", nil, &Modifier{
+			psk: true, pskIndexes: []int{0}},
+		},
+		{"parse a name with multiple modifiers", "NX1psk0+psk1+fallback",
+			nil, &Modifier{
+				fallback: true,
+				psk:      true, pskIndexes: []int{0, 1}},
+		},
+		{"parse a name with wrong fallback", "NX1fallbak",
+			errInvalidModifierName, nil,
+		},
+		{"parse a name with wrong psk missing index", "NX1psk",
+			errInvalidModifierName, nil,
+		},
+		{"parse a name with wrong psk wrong index", "NX1psks",
+			errInvalidModifierName, nil,
+		},
+	}
+
+	for _, tt := range testParams {
+		t.Run(tt.name, func(t *testing.T) {
+			m, err := parseModifiers(tt.patternName)
+			require.Equal(t, tt.errExpected, err, "error returned not match")
+			require.Equal(t, tt.modExpected, m, "modifiers returned not match")
+		})
+	}
+}
+
 func ExampleRegister() {
-	// Define your own name and pattern.
-	name := "NXdumb"
+	// Register a psk0 with NK
+	name := "NKpsk0"
 	rawPattern := `
-		-> e
-		<- e, ee, se, s, es`
+		<- s
+		...
+		-> psk, e, es
+		<- e, ee`
 
 	// Register will validate the pattern, if invalid, an error is returned.
-	err := pattern.Register(name, rawPattern)
+	err := Register(name, rawPattern)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -111,6 +176,6 @@ func ExampleRegister() {
 
 func ExampleFromString() {
 	// use the pattern NX
-	p, _ := pattern.FromString("NX")
+	p, _ := FromString("NX")
 	fmt.Println(p)
 }

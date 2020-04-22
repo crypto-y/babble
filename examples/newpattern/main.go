@@ -7,11 +7,13 @@ import (
 )
 
 func main() {
-	// Define your own name and pattern.
-	name := "NXdumb"
+	// Register a psk0 with NK
+	name := "NKpsk0"
 	rawPattern := `
-		-> e
-		<- e, ee, se, s, es`
+		<- s
+		...
+		-> psk, e, es
+		<- e, ee`
 
 	// Register will validate the pattern, if invalid, an error is returned.
 	err := pattern.Register(name, rawPattern)
@@ -19,8 +21,8 @@ func main() {
 		fmt.Println(err)
 	}
 
-	// use the pattern NXdumb
-	p := pattern.FromString("NXdumb")
+	// use the pattern NKpsk0
+	p, _ := pattern.FromString("NKpsk0")
 	fmt.Printf("The patter name is: %s\n"+
 		"Pre-message pattern: %v\n"+"Message pattern: %+q",
 		p.Name, p.PreMessagePattern, p.MessagePattern)

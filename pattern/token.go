@@ -37,6 +37,8 @@ const (
 	errMustBeInitiator   = "the first line must be from initiator"
 	errInvalidLine       = "line '%s' is invalid"
 	errPskNotAllowed     = "psk is not allowed"
+	errTooManyTokens     = "pre-message cannot have more then 2 tokens"
+	errTokenNotAllowed   = "%s is not allowed in pre-message"
 )
 
 type patternLine []token
@@ -136,12 +138,70 @@ func tokenize(ms string, pre bool) (pattern, error) {
 		p = append(p, pl)
 	}
 
-	// validate pattern
-	if err := validatePattern(p, pre); err != nil {
+	// validate pattern based on it's pre-message or not
+	if pre {
+		if err := validatePrePattern(p); err != nil {
+			return nil, err
+		}
+		return p, nil
+	}
+
+	if err := validatePattern(p); err != nil {
 		return nil, err
 	}
 
 	return p, nil
+}
+
+// tokenizePreMessage takes a pre-message string and turns it into tokens. A
+// valid pre-message must pass the following checks,
+//  - it can only have a line of "e", "s", or "e, s", no "psk" is allowed.
+func validatePrePattern(pl pattern) error {
+	isInitiator := pl[0][0] == TokenInitiator
+	prevIsInitiator := !isInitiator
+
+	for _, line := range pl {
+		isInitiator = line[0] == TokenInitiator
+		// In additional to the rules specified in the noise protocol, it's also
+		// required that the initiator/responder cannot send two consecutive
+		// messages, they must alternate. For instance,
+		//   -> s
+		//   <- s
+		// is a legal patter, while,
+		//   -> s
+		//   -> s
+		// is not legal as they are both from the initiator(->)
+		if prevIsInitiator == isInitiator {
+			return errInvalidPattern(errConsecutiveTokens, line[0])
+		}
+		prevIsInitiator = isInitiator
+
+		// pre-message can have at most 2 tokens, e and s, plus a direction
+		// token, "->" or "<-", so max is 3.
+		if len(line) > 3 {
+			return errInvalidPattern(errTooManyTokens)
+		}
+
+		// check the tokens
+		tokens := line[1:]
+		if len(tokens) == 1 {
+			t := tokens[0]
+			switch t {
+			case TokenE:
+			case TokenS:
+			default:
+				return errInvalidPattern(errTokenNotAllowed, t)
+			}
+		}
+
+		if len(tokens) == 2 {
+			if tokens[0] != TokenE || tokens[1] != TokenS {
+				return errInvalidPattern(errTokenNotAllowed, tokens)
+			}
+		}
+
+	}
+	return nil
 }
 
 // validatePattern implements the rules specified in the noise specs, which,
@@ -158,17 +218,16 @@ func tokenize(ms string, pre bool) (pattern, error) {
 // transport payload unless there has also been an "ee" token.
 // 6. After an "ss" token, the responder must not send a handshake payload or
 // transport payload unless there has also been an "se" token.
-func validatePattern(pl pattern, pre bool) error {
+func validatePattern(pl pattern) error {
 	tokenSeen := map[token]int{}
 
-	// checks that the first line in the message is an initiator token, with the
-	// exception when this is a pre-message pattern.
+	// checks that the first line in the message is an initiator token.
 	isInitiator := pl[0][0] == TokenInitiator
-	if !pre && isInitiator != true {
+	if isInitiator != true {
 		return errInvalidPattern(errMustBeInitiator)
 	}
-
 	prevIsInitiator := !isInitiator
+
 	for _, line := range pl {
 		count := map[token]int{}
 
@@ -187,6 +246,8 @@ func validatePattern(pl pattern, pre bool) error {
 		}
 		prevIsInitiator = isInitiator
 
+		// TODO: psk token can only be at the begining or end of a line
+
 		for _, token := range line[1:] {
 			// check rule 1 and 2 on each pattern line. Not that a "psk" token
 			// is allowed to appear one or more times in a handshake pattern.
@@ -194,10 +255,6 @@ func validatePattern(pl pattern, pre bool) error {
 				return errInvalidPattern(errRepeatedTokens, token)
 			}
 
-			// a psk token is not allowed to appear in pre-message.
-			if token == TokenPsk && pre {
-				return errInvalidPattern(errPskNotAllowed)
-			}
 			count[token]++
 			tokenSeen[token]++
 
