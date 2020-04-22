@@ -8,7 +8,7 @@ import (
 	"github.com/yyforyongyu/noise/dh"
 )
 
-var x25519 = dh.FromString("25519")
+var x25519, _ = dh.FromString("25519")
 
 func TestGenerateKeyPair25519(t *testing.T) {
 

@@ -79,11 +79,11 @@ type Curve interface {
 }
 
 // FromString uses the provided curve name, s, to query a built-in curve.
-func FromString(s string) Curve {
+func FromString(s string) (Curve, error) {
 	if supportedCurves[s] != nil {
-		return supportedCurves[s]()
+		return supportedCurves[s](), nil
 	}
-	return nil
+	return nil, errUnsupported(s)
 }
 
 // Register updates the supported curves used in package dh.
@@ -105,4 +105,8 @@ func SupportedCurves() string {
 		keys = append(keys, k)
 	}
 	return strings.Join(keys, ", ")
+}
+
+func errUnsupported(s string) error {
+	return fmt.Errorf("curve: %s is unsupported", s)
 }

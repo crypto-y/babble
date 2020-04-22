@@ -8,7 +8,7 @@ import (
 	"github.com/yyforyongyu/noise/dh"
 )
 
-var secp256k1 = dh.FromString("secp256k1")
+var secp256k1, _ = dh.FromString("secp256k1")
 
 func TestGenerateKeyPairBitcoin(t *testing.T) {
 
