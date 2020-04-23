@@ -64,7 +64,8 @@ type Modifier struct {
 	PskIndexes []int
 }
 
-func (m *Modifier) pskMode() bool {
+// PskMode specifies whether there is a psk modifier.
+func (m *Modifier) PskMode() bool {
 	return len(m.PskIndexes) != 0
 }
 
@@ -241,7 +242,7 @@ func (hp *HandshakePattern) validatePsk() error {
 	if hp.Modifier == nil {
 		return nil
 	}
-	if !hp.Modifier.pskMode() {
+	if !hp.Modifier.PskMode() {
 		return nil
 	}
 
