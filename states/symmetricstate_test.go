@@ -138,11 +138,6 @@ func TestSymmetricStateHKDF(t *testing.T) {
 	err = ss.MixKey([]byte{1})
 	require.NotNil(t, err, "mix key should return an error")
 
-	// reset chaining key
-	ss.Reset()
-	require.Equal(
-		t, ZEROLEN, ss.chainingKey, "reset chainging key should be nil")
-
 	// test MixKeyAndHash
 	ss.chainingKey = ZEROS[:]
 	err = ss.MixKeyAndHash(key[:])
@@ -155,6 +150,12 @@ func TestSymmetricStateHKDF(t *testing.T) {
 	// use wrong size key cause an error
 	err = ss.MixKeyAndHash([]byte{1})
 	require.NotNil(t, err, "MixKeyAndHash should return an error")
+
+	// reset chaining key
+	ss.Reset()
+	require.Equal(
+		t, ZEROLEN, ss.chainingKey, "reset chainging key should be nil")
+	require.Nil(t, ss.cs, "cs should be nil")
 }
 
 func TestSymmetricStateSplit(t *testing.T) {

@@ -12,12 +12,15 @@ import (
 var (
 	cipherA, _ = noiseCipher.FromString("AESGCM")
 	cipherB, _ = noiseCipher.FromString("AESGCM")
+	cipherG, _ = noiseCipher.FromString("ChaChaPoly")
 
 	hashA, _ = noiseHash.FromString("SHA256")
 	hashB, _ = noiseHash.FromString("SHA256")
+	hashG, _ = noiseHash.FromString("BLAKE2s")
 
 	curveA, _ = noiseCurve.FromString("25519")
 	curveB, _ = noiseCurve.FromString("25519")
+	curveG, _ = noiseCurve.FromString("secp256k1")
 
 	key = [CipherKeySize]byte{
 		0xa8, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
