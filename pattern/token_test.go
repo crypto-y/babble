@@ -40,7 +40,7 @@ func TestParseMessageLine(t *testing.T) {
 func TestParseTokenFromString(t *testing.T) {
 	testParams := []struct {
 		name     string
-		expected token
+		expected Token
 	}{
 		{"e", TokenE},
 		{"s", TokenS},

@@ -128,15 +128,15 @@ func TestParseModifiers(t *testing.T) {
 	}{
 		{"parse a name with no modifers", "NX1", nil, nil},
 		{"parse a name with a fallback modifiers", "NX1fallback", nil, &Modifier{
-			fallback: true},
+			FallbackMode: true},
 		},
 		{"parse a name with a psk modifiers", "NX1psk0", nil, &Modifier{
-			psk: true, pskIndexes: []int{0}},
+			PskMode: true, pskIndexes: []int{0}},
 		},
 		{"parse a name with multiple modifiers", "NX1psk0+psk1+fallback",
 			nil, &Modifier{
-				fallback: true,
-				psk:      true, pskIndexes: []int{0, 1}},
+				FallbackMode: true,
+				PskMode:      true, pskIndexes: []int{0, 1}},
 		},
 		{"parse a name with wrong fallback", "NX1fallbak",
 			errInvalidModifierName, nil,

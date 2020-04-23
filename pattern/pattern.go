@@ -60,9 +60,9 @@ func (hp *HandshakePattern) String() string {
 // According to the noise specs, a "psk" token is allowed to appear one or more
 // times in a handshake pattern, thus a pskIndexes slice is used.
 type Modifier struct {
-	psk        bool
-	fallback   bool
-	pskIndexes []int
+	PskMode      bool
+	FallbackMode bool
+	pskIndexes   []int
 }
 
 // FromString uses the provided name, s, to query a built-in handshake pattern.
@@ -171,7 +171,7 @@ func parseModifiers(s string) (*Modifier, error) {
 	modifier := &Modifier{}
 	for _, m := range modifiers {
 		if m == "fallback" {
-			modifier.fallback = true
+			modifier.FallbackMode = true
 		} else {
 			// if it's not a fallback, then it must be a psk
 			if !strings.HasPrefix(m, "psk") {
@@ -183,7 +183,7 @@ func parseModifiers(s string) (*Modifier, error) {
 			if pskIndex == "" {
 				return nil, errInvalidModifierName
 			}
-			modifier.psk = true
+			modifier.PskMode = true
 			index, _ := strconv.Atoi(pskIndex)
 			modifier.pskIndexes = append(modifier.pskIndexes, index)
 		}
@@ -213,7 +213,7 @@ func (hp *HandshakePattern) validatePsk() error {
 	if hp.Modifier == nil {
 		return nil
 	}
-	if !hp.Modifier.psk {
+	if !hp.Modifier.PskMode {
 		return nil
 	}
 

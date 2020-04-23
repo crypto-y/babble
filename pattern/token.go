@@ -5,30 +5,31 @@ import (
 	"strings"
 )
 
-type token string
+// Token is a type for specifying the tokens used in noise.
+type Token string
 
 const (
 	// TokenE is the e from noise specs.
-	TokenE = token("e")
+	TokenE = Token("e")
 	// TokenS is the s from noise specs.
-	TokenS = token("s")
+	TokenS = Token("s")
 	// TokenEe is the ee from noise specs.
-	TokenEe = token("ee")
+	TokenEe = Token("ee")
 	// TokenEs is the es from noise specs.
-	TokenEs = token("es")
+	TokenEs = Token("es")
 	// TokenSe is the se from noise specs.
-	TokenSe = token("se")
+	TokenSe = Token("se")
 	// TokenSs is the ss from noise specs.
-	TokenSs = token("ss")
+	TokenSs = Token("ss")
 	// TokenPsk is the psk from noise specs.
-	TokenPsk = token("psk")
+	TokenPsk = Token("psk")
 
 	// TokenInitiator indicates the message is sent from initiator to responder.
-	TokenInitiator = token("->")
+	TokenInitiator = Token("->")
 	// TokenResponder indicates the message is sent from responder to initiator.
-	TokenResponder = token("<-")
+	TokenResponder = Token("<-")
 
-	tokenInvalid        = token("invalid")
+	tokenInvalid        = Token("invalid")
 	preMessageIndicator = "..."
 
 	errConsecutiveTokens = "cannot have two consecutive line using %s"
@@ -41,7 +42,7 @@ const (
 	errTokenNotAllowed   = "%s is not allowed in pre-message"
 )
 
-type patternLine []token
+type patternLine []Token
 type pattern []patternLine
 
 func errInvalidPattern(format string, a ...interface{}) error {
@@ -85,7 +86,7 @@ func parseMessageLine(l string) (patternLine, error) {
 }
 
 // parseTokenFromString turns a token string into a token type.
-func parseTokenFromString(s string) (token, error) {
+func parseTokenFromString(s string) (Token, error) {
 	switch s {
 	case "e":
 		return TokenE, nil
@@ -114,7 +115,7 @@ func parseTokenFromString(s string) (token, error) {
 // takes,
 //   -> e
 //   <- e, ee
-// and returns, a pattern, which is []patternline. A patternline is []token.
+// and returns, a pattern, which is []patternline. A patternline is []Token.
 func tokenize(ms string, pre bool) (pattern, error) {
 	p := pattern{}
 
@@ -219,7 +220,7 @@ func validatePrePattern(pl pattern) error {
 // 6. After an "ss" token, the responder must not send a handshake payload or
 // transport payload unless there has also been an "se" token.
 func validatePattern(pl pattern) error {
-	tokenSeen := map[token]int{}
+	tokenSeen := map[Token]int{}
 
 	// checks that the first line in the message is an initiator token.
 	isInitiator := pl[0][0] == TokenInitiator
@@ -229,7 +230,7 @@ func validatePattern(pl pattern) error {
 	prevIsInitiator := !isInitiator
 
 	for _, line := range pl {
-		count := map[token]int{}
+		count := map[Token]int{}
 
 		isInitiator = line[0] == TokenInitiator
 		// In additional to the rules specified in the noise protocol, it's also
