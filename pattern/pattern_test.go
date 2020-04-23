@@ -26,6 +26,7 @@ func TestSetUp(t *testing.T) {
 	n, err := FromString("N")
 	require.NotNil(t, n, "missing N")
 	require.Nil(t, err, "should not return an error")
+	require.Nil(t, n.Modifier, "should have no modifiers attached")
 
 	x, err := FromString("X")
 	require.NotNil(t, x, "missing X")
@@ -43,6 +44,18 @@ func TestSetUp(t *testing.T) {
 	require.Equal(t, len(strings.Join(supported, ", ")),
 		len(SupportedPatterns()),
 		"supported patterns should be 3+12+23=38")
+
+	// mount a psk modifier
+	n, err = FromString("Npsk0")
+	require.NotNil(t, n, "missing N")
+	require.Nil(t, err, "should not return an error")
+	require.Equal(t, &Modifier{PskMode: true, PskIndexes: []int{0}}, n.Modifier,
+		"modifier returned not match")
+
+	// mount a wrong modifier
+	n, err = FromString("Npsk")
+	require.Nil(t, n, "should return nil")
+	require.NotNil(t, err, "should return an error")
 }
 
 func TestRegister(t *testing.T) {
@@ -80,9 +93,12 @@ func TestRegister(t *testing.T) {
 			-> e, se
 			<- e, ee
 		`, true},
-		{"missing psk token", "NX1fallback", `
+		{"register pattern with fallback", "NX1fallback", `
 			-> e
 		`, false},
+		{"missing modifier name", "NX2psk", `
+			-> e
+		`, true},
 		{"missing psk token", "NX2psk0", `
 			-> e
 		`, true},
@@ -121,39 +137,41 @@ func TestRegister(t *testing.T) {
 
 func TestParseModifiers(t *testing.T) {
 	testParams := []struct {
-		name        string
-		patternName string
-		errExpected error
-		modExpected *Modifier
+		name         string
+		modifierName string
+		errExpected  error
+		modExpected  *Modifier
 	}{
-		{"parse a name with no modifers", "NX1", nil, nil},
-		{"parse a name with a fallback modifiers", "NX1fallback", nil, &Modifier{
+		{"parse a name with no modifers", "", nil, nil},
+		{"parse a name with a fallback modifiers", "fallback", nil, &Modifier{
 			FallbackMode: true},
 		},
-		{"parse a name with a psk modifiers", "NX1psk0", nil, &Modifier{
-			PskMode: true, pskIndexes: []int{0}},
+		{"parse a name with a psk modifiers", "psk0", nil, &Modifier{
+			PskMode: true, PskIndexes: []int{0}},
 		},
-		{"parse a name with multiple modifiers", "NX1psk0+psk1+fallback",
+		{"parse a name with multiple modifiers", "psk0+psk1+fallback",
 			nil, &Modifier{
 				FallbackMode: true,
-				PskMode:      true, pskIndexes: []int{0, 1}},
+				PskMode:      true, PskIndexes: []int{0, 1}},
 		},
-		{"parse a name with wrong fallback", "NX1fallbak",
+		{"parse a name with wrong fallback", "fallbak",
 			errInvalidModifierName, nil,
 		},
-		{"parse a name with wrong psk missing index", "NX1psk",
+		{"parse a name with wrong psk missing index", "psk",
 			errInvalidModifierName, nil,
 		},
-		{"parse a name with wrong psk wrong index", "NX1psks",
+		{"parse a name with wrong psk wrong index", "psks",
 			errInvalidModifierName, nil,
 		},
 	}
 
 	for _, tt := range testParams {
 		t.Run(tt.name, func(t *testing.T) {
-			m, err := parseModifiers(tt.patternName)
+			hp := &HandshakePattern{}
+			err := hp.mountModifiers(tt.modifierName)
 			require.Equal(t, tt.errExpected, err, "error returned not match")
-			require.Equal(t, tt.modExpected, m, "modifiers returned not match")
+			require.Equal(t, tt.modExpected, hp.Modifier,
+				"modifiers returned not match")
 		})
 	}
 }

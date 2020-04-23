@@ -58,39 +58,69 @@ func (hp *HandshakePattern) String() string {
 // noise protocol.
 //
 // According to the noise specs, a "psk" token is allowed to appear one or more
-// times in a handshake pattern, thus a pskIndexes slice is used.
+// times in a handshake pattern, thus a PskIndexes slice is used.
 type Modifier struct {
 	PskMode      bool
 	FallbackMode bool
-	pskIndexes   []int
+	PskIndexes   []int
 }
 
 // FromString uses the provided name, s, to query a built-in handshake pattern.
 func FromString(s string) (*HandshakePattern, error) {
+	// First, we query using the fullname s
 	if supportedPatterns[s] != nil {
 		return supportedPatterns[s], nil
 	}
-	return nil, errUnsupported(s)
+
+	// Second, if fullname is not found, then we parse out the pattern name,
+	// XXpsk0+fallback becomes XX and psk0+fallback, and query the XX.
+	re := regexp.MustCompile(patternNameRegex)
+	name := re.FindString(s)
+	if name == "" {
+		return nil, errInvalidPatternName
+	}
+	// query the name
+	hp := supportedPatterns[name]
+	if hp == nil {
+		return nil, errUnsupported(s)
+	}
+
+	// mount the modifiers if specified, eg, psk and fallback
+	modifier := strings.Trim(s, name)
+	if err := hp.mountModifiers(modifier); err != nil {
+		return nil, err
+	}
+
+	return hp, nil
 }
 
 // Register creates a new handshake pattern with the name and pattern. The
 // pattern used must statisfy the requirements specified in the noise protocol
 // specification.
-func Register(name, pattern string) error {
-	modifier, err := parseModifiers(name)
-	if err != nil {
-		return err
+func Register(s, pattern string) error {
+	// parse out the pattern name, XXpsk0+fallback becomes XX and psk0+fallback
+	re := regexp.MustCompile(patternNameRegex)
+	name := re.FindString(s)
+	if name == "" {
+		return errInvalidPatternName
 	}
 
 	hp := &HandshakePattern{
-		Name:     name,
-		Pattern:  pattern,
-		Modifier: modifier,
+		Name:    s,
+		Pattern: pattern,
 	}
+	// mount the modifiers if specified, eg, psk and fallback
+	modifier := strings.Trim(s, name)
+	if err := hp.mountModifiers(modifier); err != nil {
+		return err
+	}
+
+	// validate the pattern
 	if err := hp.loadPattern(); err != nil {
 		return err
 	}
-	supportedPatterns[name] = hp
+
+	supportedPatterns[s] = hp
 	return nil
 }
 
@@ -155,18 +185,12 @@ func (hp *HandshakePattern) loadPattern() error {
 	return nil
 }
 
-func parseModifiers(s string) (*Modifier, error) {
-	re := regexp.MustCompile(patternNameRegex)
-	pattern := re.FindString(s)
-	if pattern == "" {
-		return nil, errInvalidPatternName
+func (hp *HandshakePattern) mountModifiers(s string) error {
+	if s == "" {
+		return nil
 	}
 
-	left := strings.Trim(s, pattern)
-	if left == "" {
-		return nil, nil
-	}
-	modifiers := strings.Split(left, "+")
+	modifiers := strings.Split(s, "+")
 	// we only have two modifiers atm, either a fallback or a psk.
 	modifier := &Modifier{}
 	for _, m := range modifiers {
@@ -175,20 +199,22 @@ func parseModifiers(s string) (*Modifier, error) {
 		} else {
 			// if it's not a fallback, then it must be a psk
 			if !strings.HasPrefix(m, "psk") {
-				return nil, errInvalidModifierName
+				return errInvalidModifierName
 			}
 			// psk must be in format, psk0, psk1, psk2...
 			re := regexp.MustCompile("[0-9]+")
 			pskIndex := re.FindString(m)
 			if pskIndex == "" {
-				return nil, errInvalidModifierName
+				return errInvalidModifierName
 			}
 			modifier.PskMode = true
 			index, _ := strconv.Atoi(pskIndex)
-			modifier.pskIndexes = append(modifier.pskIndexes, index)
+			modifier.PskIndexes = append(modifier.PskIndexes, index)
 		}
 	}
-	return modifier, nil
+
+	hp.Modifier = modifier
+	return nil
 }
 
 func errInvalidPskIndex(i int) error {
@@ -218,12 +244,12 @@ func (hp *HandshakePattern) validatePsk() error {
 	}
 
 	// find all psk tokens in the pattern
-	var pskIndexes []int
+	var PskIndexes []int
 	var found bool
-	pskIndexes = hp.Modifier.pskIndexes
+	PskIndexes = hp.Modifier.PskIndexes
 	// find psk0
 	if hp.MessagePattern[0][1] == TokenPsk {
-		pskIndexes, found = findAndRemove(pskIndexes, 0)
+		PskIndexes, found = findAndRemove(PskIndexes, 0)
 		if !found {
 			return errInvalidPskIndex(0)
 		}
@@ -233,15 +259,15 @@ func (hp *HandshakePattern) validatePsk() error {
 		// find all ending psk tokens
 		lastToken := line[len(line)-1]
 		if lastToken == TokenPsk {
-			pskIndexes, found = findAndRemove(pskIndexes, i+1)
+			PskIndexes, found = findAndRemove(PskIndexes, i+1)
 			if !found {
 				return errInvalidPskIndex(i + 1)
 			}
 		}
 	}
 
-	if len(pskIndexes) != 0 {
-		return errMissingPskToken(pskIndexes[0])
+	if len(PskIndexes) != 0 {
+		return errMissingPskToken(PskIndexes[0])
 	}
 
 	return nil
