@@ -11,11 +11,7 @@ func TestInitializeHandshakeState(t *testing.T) {
 	var protocolName = []byte("TestNoise")
 	var longProtocolName = [1000]byte{}
 	var prologue = []byte("YY")
-	var wrongPsk = []byte{1, 2, 3}
-
-	// cipher, _ := noiseCipher.FromString("ChaChaPoly")
-	// hash, _ := noiseHash.FromString("BLAKE2s")
-	// curve, _ := noiseCurve.FromString("secp256k1")
+	var wrongPsk = [][]byte{{1, 2, 3}}
 
 	// test long protocl name
 	hs, err := newHandshakeState(longProtocolName[:], prologue,
@@ -23,13 +19,6 @@ func TestInitializeHandshakeState(t *testing.T) {
 	require.Nil(t, hs, "no handshake state created")
 	require.Equal(t, errProtocolNameInvalid, err,
 		"wrong protocol name error should be returned")
-
-	// test wrong psk size
-	hs, err = newHandshakeState(protocolName, prologue, wrongPsk,
-		true, nil, nil, nil, nil, nil, nil)
-	require.Nil(t, hs, "no handshake state created")
-	require.Equal(t, errInvalidPskSize, err,
-		"invalid psk size error should be returned")
 
 	// test nil symmetric state
 	hs, err = newHandshakeState(protocolName, prologue, nil,
@@ -54,6 +43,22 @@ func TestInitializeHandshakeState(t *testing.T) {
 		true, ss, KN, nil, nil, nil, nil)
 	require.Nil(t, hs, "no handshake state created")
 	require.NotNil(t, err, "an error should be returned from initialize")
+
+	// test missing psk token
+	NXpsk0, _ := pattern.FromString("NXpsk0")
+	hs, err = newHandshakeState(protocolName, prologue, nil,
+		true, ss, NXpsk0, nil, nil, nil, nil)
+	require.Nil(t, hs, "no handshake state created")
+	require.Equal(t, errMismatchedPsks(1, 0), err,
+		"invalid psk size error should be returned")
+
+	// test wrong psk size
+	NXpsk0, _ = pattern.FromString("NXpsk0")
+	hs, err = newHandshakeState(protocolName, prologue, wrongPsk,
+		true, ss, NXpsk0, nil, nil, nil, nil)
+	require.Nil(t, hs, "no handshake state created")
+	require.Equal(t, errInvalidPskSize, err,
+		"invalid psk size error should be returned")
 
 	// test successfully created a handshake state
 	NX, _ := pattern.FromString("NX")

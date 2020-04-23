@@ -12,13 +12,14 @@ import (
 const maxMessageSize = 65535
 
 var (
-	errProtocolNameInvalid     = errors.New("protocol name is too long")
-	errPatternIndexOverflow    = errors.New("pattern index overflow")
 	errInvalidPayload          = errors.New("invalid payload size")
 	errInvalidPskSize          = errors.New("invalid psk size")
-	errMissingSymmetricState   = errors.New("missing symmetric statie")
-	errMissingHandshakePattern = errors.New("missing handshake pattern")
 	errMessageOverflow         = errors.New("message size exceeds 65535-bytes")
+	errMissingHandshakePattern = errors.New("missing handshake pattern")
+	errMissingSymmetricState   = errors.New("missing symmetric state")
+	errPatternIndexOverflow    = errors.New("pattern index overflow")
+	errProtocolNameInvalid     = errors.New("protocol name is too long")
+	errPskIndexOverflow        = errors.New("psk index overflow")
 )
 
 // handshakeState object contains a symmetricState plus DH variables
@@ -26,8 +27,8 @@ var (
 // handshake phase each party has a single handshakeState, which can be deleted
 // once the handshake is finished.
 type handshakeState struct {
-	handshakePattern *pattern.HandshakePattern
-	ss               *symmetricState
+	hp *pattern.HandshakePattern
+	ss *symmetricState
 
 	// The local static key pair, s in the noise specs.
 	localStatic dh.PrivateKey
@@ -51,11 +52,14 @@ type handshakeState struct {
 	sendCipherState *cipherState
 	recvCipherState *cipherState
 
-	// psk is a 32-byte pre-shared symmetric key provided by the application.
-	psk [CipherKeySize]byte
+	// psks is slice of 32-byte pre-shared symmetric keys provided by the
+	// application. pskIndex tracks the psk token processed.
+	psks     [][CipherKeySize]byte
+	pskIndex int
 }
 
-func newHandshakeState(protocolName, prologue, psk []byte, initiator bool,
+func newHandshakeState(protocolName, prologue []byte, psks [][]byte,
+	initiator bool,
 	ss *symmetricState, hp *pattern.HandshakePattern,
 	s, e dh.PrivateKey, rs, re dh.PublicKey) (*handshakeState, error) {
 	// Protocol name must be 255 bytes or less
@@ -63,21 +67,13 @@ func newHandshakeState(protocolName, prologue, psk []byte, initiator bool,
 		return nil, errProtocolNameInvalid
 	}
 
-	// check psk is at least 32-byte if provided
-	var key [CipherKeySize]byte
-	if len(psk) != 0 && len(psk) < 32 {
-		return nil, errInvalidPskSize
-	}
-	copy(key[:], psk)
-
-	hs := &handshakeState{
-		ss:  ss,
-		psk: key,
-	}
-
+	// must provide symmetric state
 	if ss == nil {
 		return nil, errMissingSymmetricState
 	}
+	hs := &handshakeState{ss: ss}
+
+	// must provide handshake pattern
 	if hp == nil {
 		return nil, errMissingHandshakePattern
 	}
@@ -88,6 +84,22 @@ func newHandshakeState(protocolName, prologue, psk []byte, initiator bool,
 		hp, s, e, rs, re); err != nil {
 		return nil, err
 	}
+
+	// validate psk mode
+	if hs.hp.Modifier != nil && len(psks) != len(hs.hp.Modifier.PskIndexes) {
+		return nil, errMismatchedPsks(len(hs.hp.Modifier.PskIndexes), len(psks))
+	}
+
+	// check psk is at least 32-byte if provided
+	for _, psk := range psks {
+		var key [CipherKeySize]byte
+		if len(psk) != 0 && len(psk) < 32 {
+			return nil, errInvalidPskSize
+		}
+		copy(key[:], psk)
+		hs.psks = append(hs.psks, key)
+	}
+
 	return hs, nil
 }
 
@@ -95,7 +107,7 @@ func newHandshakeState(protocolName, prologue, psk []byte, initiator bool,
 // patternIndex is used to track the index of last processed pattern, when it
 // reaches the end, it indicates the patterns have all been processed.
 func (hs *handshakeState) Finished() bool {
-	return hs.patternIndex == len(hs.handshakePattern.MessagePattern)-1
+	return hs.patternIndex == len(hs.hp.MessagePattern)-1
 }
 
 // Initialize takes a valid handshakePattern and an initiator boolean
@@ -125,7 +137,7 @@ func (hs *handshakeState) Initialize(
 	hs.initiator = initiator
 	hs.localStatic, hs.localEphemeral = s, e
 	hs.remoteStaticPub, hs.remoteEphemeralPub = rs, re
-	hs.handshakePattern = hp
+	hs.hp = hp
 
 	if err := hs.processPreMessage(); err != nil {
 		return err
@@ -143,10 +155,10 @@ func (hs *handshakeState) ReadMessage(message, payloadBuffer []byte) error {
 	// find the right pattern line
 	//
 	// first, check the patternIndex is right
-	if len(hs.handshakePattern.MessagePattern)-1 < hs.patternIndex {
+	if len(hs.hp.MessagePattern)-1 < hs.patternIndex {
 		return errPatternIndexOverflow
 	}
-	line := hs.handshakePattern.MessagePattern[hs.patternIndex]
+	line := hs.hp.MessagePattern[hs.patternIndex]
 	// second, check the direction is right, as ReadMessage should only read
 	// remote messages.
 	//
@@ -190,10 +202,10 @@ func (hs *handshakeState) WriteMessage(payload, messageBuffer []byte) error {
 	// find the right pattern line
 	//
 	// first, check the patternIndex is right
-	if len(hs.handshakePattern.MessagePattern)-1 < hs.patternIndex {
+	if len(hs.hp.MessagePattern)-1 < hs.patternIndex {
 		return errPatternIndexOverflow
 	}
-	line := hs.handshakePattern.MessagePattern[hs.patternIndex]
+	line := hs.hp.MessagePattern[hs.patternIndex]
 	// second, check the direction is right, as WriteMessage should only write
 	// local messages.
 	//
@@ -234,10 +246,10 @@ func (hs *handshakeState) WriteMessage(payload, messageBuffer []byte) error {
 
 // Reset sets every thing to nil value.
 func (hs *handshakeState) Reset() {
-	hs.psk = ZEROS
+	hs.psks = nil
 	hs.patternIndex = 0
 	hs.initiator = false
-	hs.handshakePattern = nil
+	hs.hp = nil
 	hs.localStatic, hs.localEphemeral = nil, nil
 	hs.remoteStaticPub, hs.remoteEphemeralPub = nil, nil
 
@@ -268,6 +280,10 @@ func errInvalidDirection(format string, intiator bool, a ...interface{}) error {
 
 func errKeyNotEmpty(s string) error {
 	return fmt.Errorf("%s is not empty", s)
+}
+
+func errMismatchedPsks(want, got int) error {
+	return fmt.Errorf("psk mode: expected to have %v psks, got %v", want, got)
 }
 
 func errMissingKey(s string) error {
@@ -315,7 +331,7 @@ func (hs *handshakeState) processPreMessage() error {
 	// PreMessagePattern is a paragraph in format,
 	// -> s
 	// <- s
-	for _, line := range hs.handshakePattern.PreMessagePattern {
+	for _, line := range hs.hp.PreMessagePattern {
 		// pattern is a line in format,
 		// -> s
 		for _, token := range line {
@@ -340,7 +356,7 @@ func (hs *handshakeState) processPreMessage() error {
 
 				hs.ss.MixHash(keyBytes)
 				// if psk enabled, call MixKey
-				if hs.handshakePattern.Modifier.PskMode {
+				if hs.hp.Modifier.PskMode() {
 					hs.ss.MixKey(keyBytes)
 				}
 
@@ -378,8 +394,7 @@ func (hs *handshakeState) processReadToken(
 			return nil, err
 		}
 	case pattern.TokenPsk:
-		// atm, we only allow one psk to be presented
-		if err := hs.ss.MixKeyAndHash(hs.psk[:]); err != nil {
+		if err := hs.processTokenPsk(); err != nil {
 			return nil, err
 		}
 	default:
@@ -403,8 +418,7 @@ func (hs *handshakeState) processWriteToken(
 			return err
 		}
 	case pattern.TokenPsk:
-		// atm, we only allow one psk to be presented
-		if err := hs.ss.MixKeyAndHash(hs.psk[:]); err != nil {
+		if err := hs.processTokenPsk(); err != nil {
 			return err
 		}
 	default:
@@ -413,6 +427,18 @@ func (hs *handshakeState) processWriteToken(
 		}
 	}
 	return err
+}
+
+func (hs *handshakeState) processTokenPsk() error {
+	if len(hs.psks) < hs.pskIndex {
+		return errPskIndexOverflow
+	}
+	token := hs.psks[hs.pskIndex]
+	if err := hs.ss.MixKeyAndHash(token[:]); err != nil {
+		return err
+	}
+	hs.pskIndex++
+	return nil
 }
 
 // readTokenE sets re (which must be empty) to the next DHLEN bytes from the
@@ -432,7 +458,7 @@ func (hs *handshakeState) readTokenE(payload []byte) ([]byte, error) {
 	hs.ss.MixHash(hs.remoteEphemeralPub.Bytes())
 
 	// if psk enabled, call MixKey
-	if hs.handshakePattern.Modifier.PskMode {
+	if hs.hp.Modifier.PskMode() {
 		hs.ss.MixKey(hs.remoteEphemeralPub.Bytes())
 	}
 
@@ -457,7 +483,7 @@ func (hs *handshakeState) writeTokenE(payload []byte) error {
 	hs.ss.MixHash(hs.localStatic.PubKey().Bytes())
 
 	// if psk enabled, call MixKey
-	if hs.handshakePattern.Modifier.PskMode {
+	if hs.hp.Modifier.PskMode() {
 		hs.ss.MixKey(hs.remoteEphemeralPub.Bytes())
 	}
 
