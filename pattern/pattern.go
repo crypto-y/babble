@@ -89,13 +89,24 @@ func FromString(s string) (*HandshakePattern, error) {
 		return nil, errUnsupported(s)
 	}
 
+	// make a copy
+	newHp := &HandshakePattern{
+		Name:              hp.Name,
+		Pattern:           hp.Pattern,
+		PreMessagePattern: hp.PreMessagePattern,
+		MessagePattern:    hp.MessagePattern,
+	}
+
 	// mount the modifiers if specified, eg, psk and fallback
 	modifier := strings.Trim(s, name)
-	if err := hp.mountModifiers(modifier); err != nil {
+	if err := newHp.mountModifiers(modifier); err != nil {
 		return nil, err
 	}
 
-	return hp, nil
+	// cache it for future reference
+	supportedPatterns[s] = newHp
+
+	return newHp, nil
 }
 
 // Register creates a new handshake pattern with the name and pattern. The

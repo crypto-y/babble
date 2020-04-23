@@ -52,6 +52,11 @@ func TestSetUp(t *testing.T) {
 	require.Equal(t, &Modifier{PskIndexes: []int{0}}, n.Modifier,
 		"modifier returned not match")
 
+	// the mounted modifier should not affect the old pattern
+	n, err = FromString("N")
+	require.Nil(t, err, "should not return an error")
+	require.Nil(t, n.Modifier, "modifier should be nil")
+
 	// mount a wrong modifier
 	n, err = FromString("Npsk")
 	require.Nil(t, n, "should return nil")
