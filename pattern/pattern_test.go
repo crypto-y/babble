@@ -49,7 +49,7 @@ func TestSetUp(t *testing.T) {
 	n, err = FromString("Npsk0")
 	require.NotNil(t, n, "missing N")
 	require.Nil(t, err, "should not return an error")
-	require.Equal(t, &Modifier{PskMode: true, PskIndexes: []int{0}}, n.Modifier,
+	require.Equal(t, &Modifier{PskIndexes: []int{0}}, n.Modifier,
 		"modifier returned not match")
 
 	// mount a wrong modifier
@@ -144,15 +144,15 @@ func TestParseModifiers(t *testing.T) {
 	}{
 		{"parse a name with no modifers", "", nil, nil},
 		{"parse a name with a fallback modifiers", "fallback", nil, &Modifier{
-			FallbackMode: true},
+			Fallback: true},
 		},
 		{"parse a name with a psk modifiers", "psk0", nil, &Modifier{
-			PskMode: true, PskIndexes: []int{0}},
+			PskIndexes: []int{0}},
 		},
 		{"parse a name with multiple modifiers", "psk0+psk1+fallback",
 			nil, &Modifier{
-				FallbackMode: true,
-				PskMode:      true, PskIndexes: []int{0, 1}},
+				Fallback:   true,
+				PskIndexes: []int{0, 1}},
 		},
 		{"parse a name with wrong fallback", "fallbak",
 			errInvalidModifierName, nil,

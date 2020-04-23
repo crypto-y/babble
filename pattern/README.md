@@ -18,7 +18,9 @@ There are a total of 38 patterns built, in which,
 
 23 deferred handshake patterns.
 
+### PSK mode
 
+### Fallback mode
 
 ### Customized Handshake Pattern
 
