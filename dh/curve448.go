@@ -98,6 +98,15 @@ func (c *curve448) GenerateKeyPair(entropy []byte) (PrivateKey, error) {
 	return priv, nil
 }
 
+// LoadPublicKey uses the data provided to create a new public key.
+func (c *curve448) LoadPublicKey(data []byte) (PublicKey, error) {
+	p := &publicKey448{}
+	if err := p.LoadBytes(data); err != nil {
+		return nil, err
+	}
+	return p, nil
+}
+
 // Size returns the DHLEN.
 func (c *curve448) Size() int {
 	return c.DHLEN

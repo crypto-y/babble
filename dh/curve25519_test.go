@@ -80,6 +80,27 @@ func TestCurveSetUp25519(t *testing.T) {
 	require.Equal(t, "25519", x25519.String(), "name must be 25519")
 }
 
+func TestCurve25519LoadKeys(t *testing.T) {
+	pubHex := "e3712d851a0e5d79b831c5e34ab22b41a198171de209b8b8faca23a11c" +
+		"624859"
+	pub := [32]byte{
+		0xe3, 0x71, 0x2d, 0x85, 0x1a, 0xe, 0x5d, 0x79,
+		0xb8, 0x31, 0xc5, 0xe3, 0x4a, 0xb2, 0x2b, 0x41,
+		0xa1, 0x98, 0x17, 0x1d, 0xe2, 0x9, 0xb8, 0xb8,
+		0xfa, 0xca, 0x23, 0xa1, 0x1c, 0x62, 0x48, 0x59,
+	}
+	// test load public key
+	key, err := x25519.LoadPublicKey(pub[:])
+	require.Nil(t, err, "should return no error")
+	require.Equal(t, pub[:], key.Bytes(), "public key bytes not match")
+	require.Equal(t, pubHex, key.Hex(), "public key hex not match")
+
+	// test load with an error
+	key, err = x25519.LoadPublicKey(nil)
+	require.NotNil(t, err, "should return an error")
+	require.Nil(t, key, "key should nil")
+}
+
 func TestDH25519(t *testing.T) {
 
 	var (

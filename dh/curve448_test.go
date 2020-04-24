@@ -86,6 +86,30 @@ func TestCurveSetUp448(t *testing.T) {
 	require.Equal(t, "448", x448.String(), "name must be 448")
 }
 
+func TestCurve448LoadKeys(t *testing.T) {
+	pubHex := "9b08f7cc31b7e3e67d22d5aea121074a273bd2b83de09c63faa73d2c" +
+		"22c5d9bbc836647241d953d40c5b12da88120d53177f80e532c41fa0"
+	pub := [56]byte{
+		0x9b, 0x8, 0xf7, 0xcc, 0x31, 0xb7, 0xe3, 0xe6,
+		0x7d, 0x22, 0xd5, 0xae, 0xa1, 0x21, 0x7, 0x4a,
+		0x27, 0x3b, 0xd2, 0xb8, 0x3d, 0xe0, 0x9c, 0x63,
+		0xfa, 0xa7, 0x3d, 0x2c, 0x22, 0xc5, 0xd9, 0xbb,
+		0xc8, 0x36, 0x64, 0x72, 0x41, 0xd9, 0x53, 0xd4,
+		0xc, 0x5b, 0x12, 0xda, 0x88, 0x12, 0xd, 0x53,
+		0x17, 0x7f, 0x80, 0xe5, 0x32, 0xc4, 0x1f, 0xa0,
+	}
+	// test load public key
+	key, err := x448.LoadPublicKey(pub[:])
+	require.Nil(t, err, "should return no error")
+	require.Equal(t, pub[:], key.Bytes(), "public key bytes not match")
+	require.Equal(t, pubHex, key.Hex(), "public key hex not match")
+
+	// test load with an error
+	key, err = x448.LoadPublicKey(nil)
+	require.NotNil(t, err, "should return an error")
+	require.Nil(t, key, "key should nil")
+}
+
 func TestDH448(t *testing.T) {
 
 	var (

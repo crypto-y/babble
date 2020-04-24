@@ -76,6 +76,29 @@ func TestGenerateKeyPairBitcoin(t *testing.T) {
 		"public key string should not match")
 }
 
+func TestCurveBitcoinLoadKeys(t *testing.T) {
+	pubHex := "02f8b43166457e4267ac22541b5ab617956433aa9a8b264abb28dc9949" +
+		"fa9708e0"
+	pub := [33]byte{
+		0x2, 0xf8, 0xb4, 0x31, 0x66, 0x45, 0x7e, 0x42,
+		0x67, 0xac, 0x22, 0x54, 0x1b, 0x5a, 0xb6, 0x17,
+		0x95, 0x64, 0x33, 0xaa, 0x9a, 0x8b, 0x26, 0x4a,
+		0xbb, 0x28, 0xdc, 0x99, 0x49, 0xfa, 0x97, 0x8,
+		0xe0,
+	}
+
+	// test load public key
+	key, err := secp256k1.LoadPublicKey(pub[:])
+	require.Nil(t, err, "should return no error")
+	require.Equal(t, pub[:], key.Bytes(), "public key bytes not match")
+	require.Equal(t, pubHex, key.Hex(), "public key hex not match")
+
+	// test load with an error
+	key, err = secp256k1.LoadPublicKey(nil)
+	require.NotNil(t, err, "should return an error")
+	require.Nil(t, key, "key should nil")
+}
+
 func TestCurveSetUpBitcoin(t *testing.T) {
 	require.Equal(t, 32, secp256k1.Size(), "CurveBitcoin's DHLEN must be 32")
 	require.Equal(t, "secp256k1", secp256k1.String(), "name must be secp256k1")

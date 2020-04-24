@@ -118,6 +118,15 @@ func (dh *curveBitcoin) GenerateKeyPair(entropy []byte) (PrivateKey, error) {
 	return pk, nil
 }
 
+// LoadPublicKey uses the data provided to create a new public key.
+func (dh *curveBitcoin) LoadPublicKey(data []byte) (PublicKey, error) {
+	p := &publicKeyBitcoin{}
+	if err := p.LoadBytes(data); err != nil {
+		return nil, err
+	}
+	return p, nil
+}
+
 // Size returns the DHLEN.
 func (dh *curveBitcoin) Size() int {
 	return dh.DHLEN

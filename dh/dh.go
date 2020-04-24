@@ -74,6 +74,9 @@ type Curve interface {
 	// to generate a new private key.
 	GenerateKeyPair(entropy []byte) (PrivateKey, error)
 
+	// LoadPublicKey uses the data provided to create a new public key.
+	LoadPublicKey(data []byte) (PublicKey, error)
+
 	// Size returns the DHLEN value.
 	Size() int
 }
