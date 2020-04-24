@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	// "github.com/yyforyongyu/noise/pattern"
 )
 
 func TestSetUp(t *testing.T) {
