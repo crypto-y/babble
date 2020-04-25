@@ -18,7 +18,7 @@ const MinDHLEN = 32
 
 var (
 	// ErrMismatchedPublicKey is returned when the public key fails to match.
-	ErrMismatchedPublicKey = errors.New("public key mismatch")
+	ErrMismatchedPublicKey = errors.New("public key mismatched size")
 
 	supportedCurves = map[string]NewCurve{}
 )

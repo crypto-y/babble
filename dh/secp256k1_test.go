@@ -100,7 +100,7 @@ func TestCurveBitcoinLoadKeys(t *testing.T) {
 }
 
 func TestCurveSetUpBitcoin(t *testing.T) {
-	require.Equal(t, 32, secp256k1.Size(), "CurveBitcoin's DHLEN must be 32")
+	require.Equal(t, 33, secp256k1.Size(), "CurveBitcoin's DHLEN must be 33")
 	require.Equal(t, "secp256k1", secp256k1.String(), "name must be secp256k1")
 }
 
