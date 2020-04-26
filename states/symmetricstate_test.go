@@ -10,10 +10,7 @@ func TestSymmetricState(t *testing.T) {
 	var protocolName = []byte("TestNoise")
 	var longProtocolName = [1000]byte{}
 
-	csA := newCipherState(cipherA, nil)
 	alice := newSymmetricState(csA, hashA, curveA)
-
-	csB := newCipherState(cipherB, nil)
 	bob := newSymmetricState(csB, hashB, curveB)
 
 	// test encrypt then decrypt without init

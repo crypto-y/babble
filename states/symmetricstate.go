@@ -142,7 +142,7 @@ func (s *symmetricState) InitializeSymmetric(protocolName []byte) {
 	s.cs.InitializeKey(ZEROS)
 }
 
-// MixHash sets h = HASH(h || data).
+// MixHash sets h = HASH(h || data) and writes it to digest.
 func (s *symmetricState) MixHash(data []byte) {
 	input := append(s.digest, data...)
 	s.digest = s.hash.Hash(input)

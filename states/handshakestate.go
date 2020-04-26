@@ -100,14 +100,56 @@ func newHandshakeState(protocolName, prologue []byte, psks [][]byte,
 		hs.psks = append(hs.psks, key)
 	}
 
+	// finally, validate that necessary keys are provided for the pattern.
+	if err := hs.validateKeys(); err != nil {
+		return nil, err
+	}
+
 	return hs, nil
+}
+
+// validateKeys validate the four keys supplied during creation of the handshake
+// state.
+func (hs *handshakeState) validateKeys() error {
+	for _, line := range hs.hp.MessagePattern {
+		for _, token := range line[1:] {
+			switch token {
+			case pattern.TokenE:
+				if hs.mustWrite(line[0]) {
+					// e must be empty for writing
+					if hs.localEphemeral != nil {
+						return errKeyNotEmpty("local ephemeral key")
+					}
+				} else {
+					// re must be empty for reading
+					if hs.remoteEphemeralPub != nil {
+						return errKeyNotEmpty("remote ephemeral key")
+					}
+				}
+			case pattern.TokenS:
+				if hs.mustWrite(line[0]) {
+					// s must NOT be empty for writing
+					if hs.localStatic == nil {
+						return errMissingKey("local static key")
+					}
+				} else {
+					// rs must be empty for reading
+					if hs.remoteStaticPub != nil {
+						return errKeyNotEmpty("remote static key")
+					}
+				}
+			}
+		}
+	}
+
+	return nil
 }
 
 // Finished returns a bool to indicate whether the handshake is done. The
 // patternIndex is used to track the index of last processed pattern, when it
 // reaches the end, it indicates the patterns have all been processed.
 func (hs *handshakeState) Finished() bool {
-	return hs.patternIndex == len(hs.hp.MessagePattern)-1
+	return hs.patternIndex == len(hs.hp.MessagePattern)
 }
 
 // Initialize takes a valid handshakePattern and an initiator boolean
@@ -146,19 +188,19 @@ func (hs *handshakeState) Initialize(
 	return nil
 }
 
-// ReadMessage takes a byte sequence containing a Noise handshake message, and a
-// payload_buffer to write the message's plaintext payload into.
-func (hs *handshakeState) ReadMessage(message, payloadBuffer []byte) error {
+// ReadMessage takes a byte sequence containing a Noise handshake message, and
+// return the decrypted message plaintext.
+func (hs *handshakeState) ReadMessage(message []byte) ([]byte, error) {
 	if len(message) > maxMessageSize {
-		return errMessageOverflow
+		return nil, errMessageOverflow
 	}
 	// find the right pattern line
 	//
 	// first, check the patternIndex is right
 	if len(hs.hp.MessagePattern)-1 < hs.patternIndex {
-		return errPatternIndexOverflow
+		return nil, errPatternIndexOverflow
 	}
-	line := hs.hp.MessagePattern[hs.patternIndex]
+
 	// second, check the direction is right, as ReadMessage should only read
 	// remote messages.
 	//
@@ -168,15 +210,16 @@ func (hs *handshakeState) ReadMessage(message, payloadBuffer []byte) error {
 	// if hs.initiator is false, then it's read by a responder.
 	// if the first token is TokenInitiator, "->", then it's a message to be
 	// read by a responder. Thus it's a valid pattern which should be processed.
-	if hs.isLocal(line[0]) {
-		return errInvalidDirection("ReadMessage: ", hs.initiator, line[0])
+	line := hs.hp.MessagePattern[hs.patternIndex]
+	if hs.mustWrite(line[0]) {
+		return nil, errInvalidDirection("ReadMessage: ", hs.initiator, line[0])
 	}
 
 	var err error
-	for _, token := range line {
+	for _, token := range line[1:] {
 		message, err = hs.processReadToken(token, message)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
@@ -184,28 +227,31 @@ func (hs *handshakeState) ReadMessage(message, payloadBuffer []byte) error {
 	// stores the output into payloadBuffer.
 	plaintext, err := hs.ss.DecryptAndHash(message)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	copy(payloadBuffer, plaintext)
 
 	// when finished, increment the pattern index for next round
-	if err := hs.incrementPatternIndex(); err != nil {
-		return err
+	if err := hs.incrementPatternIndexAndSplit(); err != nil {
+		return nil, err
 	}
 
-	return nil
+	return plaintext, nil
 }
 
-// WriteMessage takes a payload byte sequence which may be zero-length, and a
-// messageBuffer to write the output into.
-func (hs *handshakeState) WriteMessage(payload, messageBuffer []byte) error {
+// WriteMessage takes a payload byte sequence which may be zero-length, and
+// returns the ciphertext.
+func (hs *handshakeState) WriteMessage(payload []byte) ([]byte, error) {
+	if len(payload) > maxMessageSize {
+		return nil, errMessageOverflow
+	}
+
 	// find the right pattern line
 	//
 	// first, check the patternIndex is right
 	if len(hs.hp.MessagePattern)-1 < hs.patternIndex {
-		return errPatternIndexOverflow
+		return nil, errPatternIndexOverflow
 	}
-	line := hs.hp.MessagePattern[hs.patternIndex]
+
 	// second, check the direction is right, as WriteMessage should only write
 	// local messages.
 	//
@@ -216,32 +262,33 @@ func (hs *handshakeState) WriteMessage(payload, messageBuffer []byte) error {
 	// if the first token is TokenInitiator, "->", then it's a message to be
 	// written by an initiator, thus it's a valid pattern which should be
 	// processed.
-	if !hs.isLocal(line[0]) {
-		return errInvalidDirection("WriteMessage: ", hs.initiator, line[0])
+	line := hs.hp.MessagePattern[hs.patternIndex]
+	if !hs.mustWrite(line[0]) {
+		return nil, errInvalidDirection("WriteMessage: ", hs.initiator, line[0])
 	}
 
-	for _, token := range line {
-		if err := hs.processWriteToken(token, payload); err != nil {
-			return err
+	var err error
+	var buffer []byte
+	for _, token := range line[1:] {
+		buffer, err = hs.processWriteToken(token, buffer)
+		if err != nil {
+			return nil, err
 		}
 	}
 
 	// Appends EncryptAndHash(payload) to the buffer.
 	ciphertext, err := hs.ss.EncryptAndHash(payload)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if len(ciphertext) > maxMessageSize {
-		return errMessageOverflow
-	}
-	copy(messageBuffer, ciphertext)
+	buffer = append(buffer, ciphertext...)
 
 	// when finished, increment the pattern index for next round
-	if err := hs.incrementPatternIndex(); err != nil {
-		return err
+	if err := hs.incrementPatternIndexAndSplit(); err != nil {
+		return nil, err
 	}
 
-	return nil
+	return buffer, nil
 }
 
 // Reset sets every thing to nil value.
@@ -269,6 +316,10 @@ func (hs *handshakeState) Reset() {
 	}
 }
 
+func errInvalidDHToken(t pattern.Token) error {
+	return fmt.Errorf("invalid token during DHKE: %s", t)
+}
+
 func errInvalidDirection(format string, intiator bool, a ...interface{}) error {
 	role := "responder"
 	if intiator {
@@ -287,11 +338,14 @@ func errMismatchedPsks(want, got int) error {
 }
 
 func errMissingKey(s string) error {
-	return fmt.Errorf("pre-message: missing key %s", s)
+	return fmt.Errorf("missing key: %s", s)
 }
 
-func (hs *handshakeState) incrementPatternIndex() error {
+func (hs *handshakeState) incrementPatternIndexAndSplit() error {
 	hs.patternIndex++
+	if hs.patternIndex > len(hs.hp.MessagePattern) {
+		return errPatternIndexOverflow
+	}
 	if !hs.Finished() {
 		return nil
 	}
@@ -301,23 +355,29 @@ func (hs *handshakeState) incrementPatternIndex() error {
 	if err != nil {
 		return err
 	}
-	hs.sendCipherState = c1
-	hs.recvCipherState = c2
-
+	if hs.initiator {
+		hs.sendCipherState = c1
+		hs.recvCipherState = c2
+	} else {
+		hs.sendCipherState = c2
+		hs.recvCipherState = c1
+	}
 	return nil
 }
 
-// isLocal checks whether a function is calling from a local view. If a message
-// pattern starts with "->", and the caller is an initiator, then it's a local
-// view, otherwise it's a remote view. This is useful when deciding whether a
-// local or remote ephemeral/static key should be used. For instance,
+// mustWrite checks whether a read/write function should be called. If a message
+// pattern starts with "->", and the caller is an initiator, then it's must
+// perform write, otherwise it must perform read. This is useful when deciding
+// whether a local or remote ephemeral/static key should be used. For instance,
 // when processing a pattern line, "-> s",
-//  - if the caller is an initiator, then the local static key should be used;
-//  - if the caller is an responder, then the remote static key should be used.
+//  - if the caller is an initiator, then the local static key should be used
+//    for writting;
+//  - if the caller is an responder, then the remote static key should be used
+//    for reading.
 // when performing reading/writing on this pattern,
 //  - if the caller is an initiator, it is not allowed to read this line;
 //  - if the caller is an responder, it is not allowed to write this line.
-func (hs *handshakeState) isLocal(t pattern.Token) bool {
+func (hs *handshakeState) mustWrite(t pattern.Token) bool {
 	return hs.initiator == (t == pattern.TokenInitiator)
 }
 
@@ -342,7 +402,7 @@ func (hs *handshakeState) processPreMessage() error {
 			switch token {
 			case pattern.TokenE:
 				// find out whether a local or remote key to be used
-				if hs.isLocal(direction) {
+				if hs.mustWrite(direction) {
 					if hs.localEphemeral == nil {
 						return errMissingKey("local ephemeral")
 					}
@@ -356,13 +416,13 @@ func (hs *handshakeState) processPreMessage() error {
 
 				hs.ss.MixHash(keyBytes)
 				// if psk enabled, call MixKey
-				if hs.hp.Modifier.PskMode() {
+				if hs.pskMode() {
 					hs.ss.MixKey(keyBytes)
 				}
 
 			case pattern.TokenS:
 				// find out whether a local or remote key to be used
-				if hs.isLocal(direction) {
+				if hs.mustWrite(direction) {
 					if hs.localStatic == nil {
 						return errMissingKey("local static")
 					}
@@ -371,11 +431,14 @@ func (hs *handshakeState) processPreMessage() error {
 					if hs.remoteStaticPub == nil {
 						return errMissingKey("remote static")
 					}
+					keyBytes = hs.remoteStaticPub.Bytes()
 				}
+
 				hs.ss.MixHash(keyBytes)
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -402,43 +465,53 @@ func (hs *handshakeState) processReadToken(
 			return nil, err
 		}
 	}
+
 	return payload, err
 }
 
 func (hs *handshakeState) processWriteToken(
-	token pattern.Token, payload []byte) error {
+	token pattern.Token, payload []byte) ([]byte, error) {
 	var err error
 	switch token {
 	case pattern.TokenE:
-		if err := hs.writeTokenE(payload); err != nil {
-			return err
+		payload, err = hs.writeTokenE(payload)
+		if err != nil {
+			return nil, err
 		}
 	case pattern.TokenS:
-		if err := hs.writeTokenS(payload); err != nil {
-			return err
+		payload, err = hs.writeTokenS(payload)
+		if err != nil {
+			return nil, err
 		}
 	case pattern.TokenPsk:
 		if err := hs.processTokenPsk(); err != nil {
-			return err
+			return nil, err
 		}
 	default:
 		if err := hs.processTokenDH(token); err != nil {
-			return err
+			return nil, err
 		}
 	}
-	return err
+
+	return payload, nil
 }
 
 func (hs *handshakeState) processTokenPsk() error {
-	if len(hs.psks) < hs.pskIndex {
+	if len(hs.psks)-1 < hs.pskIndex {
 		return errPskIndexOverflow
 	}
 	token := hs.psks[hs.pskIndex]
+	// safe to ignore the error here
 	if err := hs.ss.MixKeyAndHash(token[:]); err != nil {
 		return err
 	}
 	hs.pskIndex++
+
 	return nil
+}
+
+func (hs *handshakeState) pskMode() bool {
+	return hs.hp.Modifier != nil && hs.hp.Modifier.PskMode()
 }
 
 // readTokenE sets re (which must be empty) to the next DHLEN bytes from the
@@ -454,11 +527,16 @@ func (hs *handshakeState) readTokenE(payload []byte) ([]byte, error) {
 	if len(payload) < dhlen {
 		return nil, errInvalidPayload
 	}
-	hs.remoteEphemeralPub.LoadBytes(payload[:dhlen])
+
+	pub, err := hs.ss.curve.LoadPublicKey(payload[:dhlen])
+	if err != nil {
+		return nil, err
+	}
+	hs.remoteEphemeralPub = pub
 	hs.ss.MixHash(hs.remoteEphemeralPub.Bytes())
 
 	// if psk enabled, call MixKey
-	if hs.hp.Modifier.PskMode() {
+	if hs.pskMode() {
 		hs.ss.MixKey(hs.remoteEphemeralPub.Bytes())
 	}
 
@@ -467,27 +545,27 @@ func (hs *handshakeState) readTokenE(payload []byte) ([]byte, error) {
 
 // writeTokenE sets e (which must be empty) to GENERATE_KEYPAIR(). Appends
 // e.public_key to the buffer. Calls MixHash(e.public_key).
-func (hs *handshakeState) writeTokenE(payload []byte) error {
+func (hs *handshakeState) writeTokenE(payload []byte) ([]byte, error) {
 	// check empty
 	if hs.localEphemeral != nil {
-		return errKeyNotEmpty("local ephemeral key")
+		return nil, errKeyNotEmpty("local ephemeral key")
 	}
 
 	key, err := hs.ss.curve.GenerateKeyPair(nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	hs.localEphemeral = key
 	payload = append(payload, hs.localEphemeral.PubKey().Bytes()...)
 
-	hs.ss.MixHash(hs.localStatic.PubKey().Bytes())
+	hs.ss.MixHash(hs.localEphemeral.PubKey().Bytes())
 
 	// if psk enabled, call MixKey
-	if hs.hp.Modifier.PskMode() {
-		hs.ss.MixKey(hs.remoteEphemeralPub.Bytes())
+	if hs.pskMode() {
+		hs.ss.MixKey(hs.localEphemeral.PubKey().Bytes())
 	}
 
-	return nil
+	return payload, nil
 }
 
 // readTokenS sets temp to the next DHLEN + ADLEN bytes of the payload if
@@ -495,8 +573,8 @@ func (hs *handshakeState) writeTokenE(payload []byte) error {
 // be empty) to DecryptAndHash(temp).
 func (hs *handshakeState) readTokenS(payload []byte) ([]byte, error) {
 	// check empty
-	if hs.remoteEphemeralPub != nil {
-		return nil, errKeyNotEmpty("remote ephemeral key")
+	if hs.remoteStaticPub != nil {
+		return nil, errKeyNotEmpty("remote static key")
 	}
 
 	// The protocol specified a temp key with length DHLEN + 16 bytes, where the
@@ -505,29 +583,48 @@ func (hs *handshakeState) readTokenS(payload []byte) ([]byte, error) {
 	dhlen := hs.ss.curve.Size()
 	adlen := hs.ss.cs.cipher.Cipher().Overhead()
 
-	var temp []byte
 	tempLen := dhlen
 	if hs.ss.cs.HasKey() {
 		tempLen = dhlen + adlen
 	}
-	copy(temp, payload[:tempLen])
+
+	// check we have enough bytes to use
+	if len(payload) < tempLen {
+		return nil, errInvalidPayload
+	}
+
+	temp := make([]byte, tempLen)
+	copy(temp[:], payload[:tempLen])
 	data, err := hs.ss.DecryptAndHash(temp)
 	if err != nil {
 		return nil, err
 	}
-	hs.remoteStaticPub.LoadBytes(data)
+
+	// create the public key
+	pub, err := hs.ss.curve.LoadPublicKey(data)
+	if err != nil {
+		return nil, err
+	}
+	hs.remoteStaticPub = pub
+
 	return payload[tempLen:], nil
 
 }
 
 // writeTokenS appends EncryptAndHash(s.public_key) to the buffer.
-func (hs *handshakeState) writeTokenS(payload []byte) error {
+func (hs *handshakeState) writeTokenS(payload []byte) ([]byte, error) {
+	// local static must not be empty, it should be supplied via creation of
+	// the handshake state.
+	if hs.localStatic == nil {
+		return nil, errMissingKey("local static key")
+	}
 	data, err := hs.ss.EncryptAndHash(hs.localStatic.PubKey().Bytes())
 	if err != nil {
-		return err
+		return nil, err
 	}
 	payload = append(payload, data...)
-	return nil
+
+	return payload, nil
 }
 
 // processTokenDH will do a DH exchange on the local and remote key pair.
@@ -537,27 +634,47 @@ func (hs *handshakeState) processTokenDH(token pattern.Token) error {
 
 	switch token {
 	case pattern.TokenEe:
+		// if it's "ee", the first is the local ephemeral key, the second is the
+		// remote ephemeral key.
 		local = hs.localEphemeral      // e
 		remote = hs.remoteEphemeralPub // re
+
 	case pattern.TokenSs:
+		// if it's "ss", the first key is the local static key, the second is
+		// the remote static key.
 		local = hs.localStatic      // s
 		remote = hs.remoteStaticPub // rs
+
 	case pattern.TokenEs:
 		if hs.initiator {
+			// if it's "es", when it's an initiator, the first token is it's
+			// local ephemeral key, the second is the remote static key.
 			local = hs.localEphemeral   // e
 			remote = hs.remoteStaticPub // rs
 		} else {
+			// when it's a responder, the first "e" is the remote ephemeral key,
+			// the second "s" is the local static key.
 			local = hs.localStatic         // s
 			remote = hs.remoteEphemeralPub // re
 		}
 	case pattern.TokenSe:
 		if hs.initiator {
+			// if it's "se", when it's an initiator, the first is its local
+			// static key, the second is the remote ephemeral key.
 			local = hs.localStatic         // s
 			remote = hs.remoteEphemeralPub // re
 		} else {
+			// when it's a responder, the first "s" is the remote static key,
+			// the second "e" is the local ephemeral key.
 			local = hs.localEphemeral   // e
 			remote = hs.remoteStaticPub // rs
 		}
+	default:
+		return errInvalidDHToken(token)
+	}
+
+	if local == nil || remote == nil {
+		return errMissingKey("missing key when performing DH")
 	}
 
 	digest, err := local.DH(remote.Bytes())
@@ -565,5 +682,6 @@ func (hs *handshakeState) processTokenDH(token pattern.Token) error {
 		return err
 	}
 	hs.ss.MixKey(digest)
+
 	return nil
 }
