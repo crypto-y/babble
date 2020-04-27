@@ -14,7 +14,7 @@ type testConfig struct {
 }
 
 func TestParseProtocolName(t *testing.T) {
-	unsupported := "YY"
+	unsupported := "YXY"
 	testParams := []struct {
 		name         string
 		protocolName string
@@ -47,25 +47,25 @@ func TestParseProtocolName(t *testing.T) {
 		},
 		{
 			"parse name with unsupported pattern",
-			"Noise_YY_25519_AESGCM_SHA256",
+			"Noise_YXY_25519_AESGCM_SHA256",
 			errInvalidComponent(unsupported),
 			nil,
 		},
 		{
 			"parse name with unsupported curve",
-			"Noise_XX_YY_AESGCM_SHA256",
+			"Noise_XX_YXY_AESGCM_SHA256",
 			errInvalidComponent(unsupported),
 			nil,
 		},
 		{
 			"parse name with unsupported cipher",
-			"Noise_XX_25519_YY_SHA256",
+			"Noise_XX_25519_YXY_SHA256",
 			errInvalidComponent(unsupported),
 			nil,
 		},
 		{
 			"parse name with unsupported hash",
-			"Noise_XX_25519_AESGCM_YY",
+			"Noise_XX_25519_AESGCM_YXY",
 			errInvalidComponent(unsupported),
 			nil,
 		},
