@@ -9,7 +9,7 @@ import (
 	"github.com/yyforyongyu/noise/rekey"
 )
 
-// CipherKeySize defines the bytes of the key.
+// CipherKeySize defines the byte length of the key used for cipher.
 const CipherKeySize = 32
 
 var (

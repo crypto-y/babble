@@ -11,9 +11,8 @@ import (
 	"github.com/yyforyongyu/noise/pattern"
 )
 
-const (
-	NoisePrefix = "Noise"
-)
+// NoisePrefix is the mandatory prefix defined by the noise protocol framework.
+const NoisePrefix = "Noise"
 
 var (
 	ErrProtocolInvalidName  = errors.New("invalid potocol name")

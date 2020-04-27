@@ -15,14 +15,14 @@ import (
 )
 
 const (
-	// ADSize defines the size of the ad(authentication data), in bytes.
-	ADSize = 16
+	// // ADSize defines the size of the ad(authentication data), in bytes.
+	// ADSize = 16
 
 	// KeySize defines the size of the cipher key, in bytes.
 	KeySize = 32
 
-	// NonceSize defines the size of the nonce, an 8-byte unsigned integer.
-	NonceSize = 8
+	// // NonceSize defines the size of the nonce, an 8-byte unsigned integer.
+	// NonceSize = 8
 
 	// MaxNonce is an 8-byte unsigned integer and equals to 2^64-1.
 	MaxNonce = ^uint64(0)

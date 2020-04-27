@@ -12,9 +12,9 @@ import (
 	"strings"
 )
 
-// MinDHLEN specifies the minimal size in bytes of public keys and DH
-// outputs. For security reasons, it must be 32 or greater.
-const MinDHLEN = 32
+// // MinDHLEN specifies the minimal size in bytes of public keys and DH
+// // outputs. For security reasons, it must be 32 or greater.
+// const MinDHLEN = 32
 
 var (
 	// ErrMismatchedPublicKey is returned when the public key fails to match.

@@ -1,3 +1,4 @@
+// Package rekey defines the rekey functions to be used in the noise package.
 package rekey
 
 import (
