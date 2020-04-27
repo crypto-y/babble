@@ -27,12 +27,12 @@ func TestParseProtocolName(t *testing.T) {
 			nil,
 			&testConfig{"XX", "25519", "AESGCM", "SHA256"},
 		},
-		// {
-		// 	"parse a protocol name with pattern modifiers",
-		// 	"Noise_XXfallback+psk0_25519_AESGCM_SHA256",
-		// 	nil,
-		// 	&testConfig{"XX", "25519", "AESGCM", "SHA256"},
-		// },
+		{
+			"parse a protocol name with pattern modifiers",
+			"Noise_XXfallback+psk0_25519_AESGCM_SHA256",
+			nil,
+			&testConfig{"XX", "25519", "AESGCM", "SHA256"},
+		},
 		{
 			"parse name with wrong prefix",
 			"YYois_XX_25519_AESGCM_SHA256",
@@ -70,7 +70,6 @@ func TestParseProtocolName(t *testing.T) {
 			nil,
 		},
 	}
-	// name := "Noise_XXfallback+psk0_25519_AESGCM_SHA256"
 	for _, tt := range testParams {
 		t.Run(tt.name, func(t *testing.T) {
 			c, err := parseProtocolName(tt.protocolName)
