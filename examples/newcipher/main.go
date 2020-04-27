@@ -67,7 +67,7 @@ func (nc *NewCipher) InitCipher(key [32]byte) error {
 }
 
 // Rekey updates the cipher's key by calling InitCipher.
-func (nc *NewCipher) Rekey([32]byte) ([]byte, error) {
+func (nc *NewCipher) Rekey() [noiseCipher.KeySize]byte {
 	var newKey [32]byte
 
 	nonce := nc.EncodeNonce(noiseCipher.MaxNonce)
@@ -75,22 +75,28 @@ func (nc *NewCipher) Rekey([32]byte) ([]byte, error) {
 		nil, nonce, noiseCipher.ZEROS[:], noiseCipher.ZEROLEN)
 	copy(newKey[:], key)
 
-	// InitCipher has no error, safe to ignore
-	nc.InitCipher(newKey)
-	return newKey[:], nil
+	return newKey
+}
+
+// Reset removes the cipher.
+func (nc *NewCipher) Reset() {
+	nc.aead = nil
 }
 
 func (nc *NewCipher) String() string {
 	return "ChaChaPolyX"
 }
 
-func main() {
-	var ChaChaPolyX noiseCipher.AEAD = &NewCipher{}
+func newCipher() noiseCipher.AEAD {
+	return &NewCipher{}
+}
 
+func main() {
 	// Register it for package noise.
-	noiseCipher.Register(ChaChaPolyX.String(), ChaChaPolyX)
+	noiseCipher.Register("ChaChaPolyX", newCipher)
 
 	// Once registered, inside the package noise, it can be called as,
 	// noiseCipher.FromString("ChaChaPolyX")
-	fmt.Println(noiseCipher.FromString("ChaChaPolyX"))
+	c, _ := noiseCipher.FromString("ChaChaPolyX")
+	fmt.Println(c)
 }

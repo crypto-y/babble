@@ -40,12 +40,18 @@ func (s *hashSha3) Reset() {
 	s.New().Reset()
 }
 
-func main() {
-	var noiseSha3 noiseHash.Hash = &hashSha3{
+func newSha3() noiseHash.Hash {
+	return &hashSha3{
 		name: "SHA3",
 		h:    sha3.New512(),
 	}
-	noiseHash.Register(noiseSha3.String(), noiseSha3)
+}
+
+func main() {
+	// register
+	noiseHash.Register("SHA3", newSha3)
+
+	noiseSha3, _ := noiseHash.FromString("SHA3")
 
 	fmt.Println("sha3 block length: ", noiseSha3.BlockLen())
 	fmt.Println("sha3 hash length: ", noiseSha3.HashLen())

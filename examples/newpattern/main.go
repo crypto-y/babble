@@ -7,13 +7,14 @@ import (
 )
 
 func main() {
-	// Register a psk0 with NK
-	name := "NKpsk0"
+	// Register a dumb pattern
+	name := "YY"
 	rawPattern := `
 		<- s
+		-> s
 		...
-		-> psk, e, es
-		<- e, ee`
+		-> e
+		<- e, ee, es`
 
 	// Register will validate the pattern, if invalid, an error is returned.
 	err := pattern.Register(name, rawPattern)
@@ -22,8 +23,8 @@ func main() {
 	}
 
 	// use the pattern NKpsk0
-	p, _ := pattern.FromString("NKpsk0")
+	p, _ := pattern.FromString("YY")
 	fmt.Printf("The patter name is: %s\n"+
-		"Pre-message pattern: %v\n"+"Message pattern: %+q",
+		"Pre-message pattern: %v\n"+"Message pattern: %+q\n",
 		p.Name, p.PreMessagePattern, p.MessagePattern)
 }
