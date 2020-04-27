@@ -1,4 +1,4 @@
-package noise
+package rekey
 
 import (
 	"errors"
@@ -6,10 +6,15 @@ import (
 	noiseCipher "github.com/yyforyongyu/noise/cipher"
 )
 
-// DefaultRekeyInterval is used when RekeyInterval is unset.
-const DefaultRekeyInterval = noiseCipher.MaxNonce
+const (
+	// DefaultRekeyInterval is used when RekeyInterval is unset.
+	DefaultRekeyInterval = noiseCipher.MaxNonce
 
-var errCorruptedNonce = errors.New("Nonce is corrupted, please reset")
+	// CipherKeySize defines the byte lengtj of the key used in cipher.
+	CipherKeySize = 32
+)
+
+var ErrCorruptedNonce = errors.New("Nonce is corrupted, please reset")
 
 // Rekeyer defines a customized Rekey function to be used when rotating cipher
 // key.
@@ -38,7 +43,7 @@ type defaultRekeyer struct {
 	resetNonce    bool
 }
 
-func newDefault(interval int, cipher noiseCipher.AEAD, resetNonce bool) Rekeyer {
+func NewDefault(interval int, cipher noiseCipher.AEAD, resetNonce bool) Rekeyer {
 	return &defaultRekeyer{
 		RekeyInterval: uint64(interval),
 		cipher:        cipher,
@@ -67,7 +72,7 @@ func (d *defaultRekeyer) CheckRekey(n uint64) (bool, error) {
 	// if nonce is greater than the value, it must be corrupted.
 	// Maybe this could happen from calling cipherState.SetNonce.
 	if n > d.RekeyInterval {
-		return false, errCorruptedNonce
+		return false, ErrCorruptedNonce
 	}
 
 	// when nonce reaches a given value, performs a rekey.
