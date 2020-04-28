@@ -89,16 +89,36 @@ func TestCurve25519LoadKeys(t *testing.T) {
 		0xa1, 0x98, 0x17, 0x1d, 0xe2, 0x9, 0xb8, 0xb8,
 		0xfa, 0xca, 0x23, 0xa1, 0x1c, 0x62, 0x48, 0x59,
 	}
+	priv := [32]byte{
+		0xa8, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+		0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+		0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+		0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0x6b,
+	}
 	// test load public key
 	key, err := x25519.LoadPublicKey(pub[:])
 	require.Nil(t, err, "should return no error")
 	require.Equal(t, pub[:], key.Bytes(), "public key bytes not match")
 	require.Equal(t, pubHex, key.Hex(), "public key hex not match")
 
-	// test load with an error
+	// test load public key with an error
 	key, err = x25519.LoadPublicKey(nil)
-	require.NotNil(t, err, "should return an error")
+	require.Equal(t, "public key is wrong: want 32 bytes, got 0 bytes",
+		err.Error(), "should return an error")
 	require.Nil(t, key, "key should nil")
+
+	// test load private key
+	privKey, err := x25519.LoadPrivateKey(priv[:])
+	require.Nil(t, err, "should return no error")
+	require.Equal(t, priv[:], privKey.Bytes(), "private key bytes not match")
+	require.Equal(t, pub[:], privKey.PubKey().Bytes(),
+		"public key bytes not match")
+
+	// test load private key with an error
+	privKey, err = x25519.LoadPrivateKey(nil)
+	require.Equal(t, "private key is wrong: want 32 bytes, got 0 bytes",
+		err.Error(), "should return no error")
+	require.Nil(t, privKey, "private key should be nil")
 }
 
 func TestDH25519(t *testing.T) {
@@ -145,8 +165,8 @@ func TestDH25519(t *testing.T) {
 	secret, err := alicePrivKey.DH(invalidPub)
 	require.Equal(t, EMPTY, secret,
 		"when public is wrong, no key pair should return")
-	require.Equal(t, dh.ErrMismatchedPublicKey, err,
-		"wrong error returned")
+	require.Equal(t, "public key is wrong: want 32 bytes, got 1 bytes",
+		err.Error(), "wrong error returned")
 
 	// check from Alice's view
 	secret, err = alicePrivKey.DH(bobPub[:])

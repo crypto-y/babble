@@ -23,7 +23,7 @@ func (pk *publicKey448) Bytes() []byte {
 // LoadBytes takes the input data and copies it into a dhlen448-byte array.
 func (pk *publicKey448) LoadBytes(data []byte) error {
 	if len(data) != dhlen448 {
-		return ErrMismatchedPublicKey
+		return errMismatchedKey("public", dhlen448, len(data))
 	}
 	copy(pk.raw[:], data)
 	return nil
@@ -96,6 +96,16 @@ func (c *curve448) GenerateKeyPair(entropy []byte) (PrivateKey, error) {
 	priv := &privateKey448{pub: &publicKey448{}}
 	priv.Update(secret)
 	return priv, nil
+}
+
+// LoadPrivateKey uses the data provided to create a new private key.
+func (c *curve448) LoadPrivateKey(data []byte) (PrivateKey, error) {
+	p := &privateKey448{pub: &publicKey448{}}
+	if len(data) != dhlen448 {
+		return nil, errMismatchedKey("private", dhlen448, len(data))
+	}
+	p.Update(data)
+	return p, nil
 }
 
 // LoadPublicKey uses the data provided to create a new public key.

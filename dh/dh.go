@@ -7,7 +7,6 @@
 package dh
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 )
@@ -17,9 +16,6 @@ import (
 // const MinDHLEN = 32
 
 var (
-	// ErrMismatchedPublicKey is returned when the public key fails to match.
-	ErrMismatchedPublicKey = errors.New("public key mismatched size")
-
 	supportedCurves = map[string]NewCurve{}
 )
 
@@ -74,6 +70,9 @@ type Curve interface {
 	// to generate a new private key.
 	GenerateKeyPair(entropy []byte) (PrivateKey, error)
 
+	// LoadPrivateKey uses the data provided to create a new private key.
+	LoadPrivateKey(data []byte) (PrivateKey, error)
+
 	// LoadPublicKey uses the data provided to create a new public key.
 	LoadPublicKey(data []byte) (PublicKey, error)
 
@@ -112,4 +111,10 @@ func SupportedCurves() string {
 
 func errUnsupported(s string) error {
 	return fmt.Errorf("curve: %s is unsupported", s)
+}
+
+// errMismatchedKey is returned when the provided key length fails to match.
+func errMismatchedKey(k string, want, got int) error {
+	s := k + " key is wrong: want %v bytes, got %v bytes"
+	return fmt.Errorf(s, want, got)
 }

@@ -28,7 +28,7 @@ func (pk *publicKey25519) Hex() string {
 // LoadBytes takes the input data and copies it into a dhlen25519-byte array.
 func (pk *publicKey25519) LoadBytes(data []byte) error {
 	if len(data) != dhlen25519 {
-		return ErrMismatchedPublicKey
+		return errMismatchedKey("public", dhlen25519, len(data))
 	}
 	copy(pk.raw[:], data)
 	return nil
@@ -96,6 +96,16 @@ func (dh *curve25519) GenerateKeyPair(entropy []byte) (PrivateKey, error) {
 	priv := &privateKey25519{pub: &publicKey25519{}}
 	priv.Update(secret)
 	return priv, nil
+}
+
+// LoadPrivateKey uses the data provided to create a new private key.
+func (dh *curve25519) LoadPrivateKey(data []byte) (PrivateKey, error) {
+	p := &privateKey25519{pub: &publicKey25519{}}
+	if len(data) != dhlen25519 {
+		return nil, errMismatchedKey("private", dhlen25519, len(data))
+	}
+	p.Update(data)
+	return p, nil
 }
 
 // LoadPublicKey uses the data provided to create a new public key.

@@ -86,6 +86,12 @@ func TestCurveBitcoinLoadKeys(t *testing.T) {
 		0xbb, 0x28, 0xdc, 0x99, 0x49, 0xfa, 0x97, 0x8,
 		0xe0,
 	}
+	priv := [32]byte{
+		0x1a, 0xc3, 0x6f, 0x20, 0xbd, 0xfa, 0xe1, 0xc6,
+		0x5a, 0x9c, 0x25, 0x9f, 0x94, 0x2f, 0x24, 0x45,
+		0xbb, 0xa1, 0xd, 0xd3, 0xb, 0xf5, 0xd7, 0x3a,
+		0xad, 0x7c, 0x8a, 0x4b, 0x41, 0x6d, 0x1c, 0x9e,
+	}
 
 	// test load public key
 	key, err := secp256k1.LoadPublicKey(pub[:])
@@ -93,10 +99,31 @@ func TestCurveBitcoinLoadKeys(t *testing.T) {
 	require.Equal(t, pub[:], key.Bytes(), "public key bytes not match")
 	require.Equal(t, pubHex, key.Hex(), "public key hex not match")
 
-	// test load with an error
+	// test load public key with an error
 	key, err = secp256k1.LoadPublicKey(nil)
-	require.NotNil(t, err, "should return an error")
+	require.Equal(t, "public key is wrong: want 33 bytes, got 0 bytes",
+		err.Error(), "should return an error")
 	require.Nil(t, key, "key should nil")
+
+	// test load public key with an error from btcec
+	wrongPub := append(priv[:], byte(0))
+	key, err = secp256k1.LoadPublicKey(wrongPub)
+	require.Equal(t, "invalid magic in compressed pubkey string: 26",
+		err.Error(), "should return an error")
+	require.Nil(t, key, "key should nil")
+
+	// test load private key
+	privKey, err := secp256k1.LoadPrivateKey(priv[:])
+	require.Nil(t, err, "should return no error")
+	require.Equal(t, priv[:], privKey.Bytes(), "private key bytes not match")
+	require.Equal(t, pub[:], privKey.PubKey().Bytes(),
+		"public key bytes not match")
+
+	// test load private key with an error
+	privKey, err = secp256k1.LoadPrivateKey(nil)
+	require.Equal(t, "private key is wrong: want 32 bytes, got 0 bytes",
+		err.Error(), "should return no error")
+	require.Nil(t, privKey, "private key should be nil")
 }
 
 func TestCurveSetUpBitcoin(t *testing.T) {
@@ -151,8 +178,8 @@ func TestDHBitcoin(t *testing.T) {
 	secret, err := alicePrivKey.DH(invalidPub)
 	require.Equal(t, EMPTY, secret,
 		"when public is wrong, no key pair should return")
-	require.Equal(t, dh.ErrMismatchedPublicKey, err,
-		"wrong error returned")
+	require.Equal(t, "public key is wrong: want 33 bytes, got 1 bytes",
+		err.Error(), "wrong error returned")
 
 	// check from Alice's view
 	secret, err = alicePrivKey.DH(bobPub[:])

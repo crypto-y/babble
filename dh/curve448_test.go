@@ -98,16 +98,40 @@ func TestCurve448LoadKeys(t *testing.T) {
 		0xc, 0x5b, 0x12, 0xda, 0x88, 0x12, 0xd, 0x53,
 		0x17, 0x7f, 0x80, 0xe5, 0x32, 0xc4, 0x1f, 0xa0,
 	}
+	priv := [56]byte{
+		0x9a, 0x8f, 0x49, 0x25, 0xd1, 0x51, 0x9f, 0x57,
+		0x75, 0xcf, 0x46, 0xb0, 0x4b, 0x58, 0x0, 0xd4,
+		0xee, 0x9e, 0xe8, 0xba, 0xe8, 0xbc, 0x55, 0x65,
+		0xd4, 0x98, 0xc2, 0x8d, 0xd9, 0xc9, 0xba, 0xf5,
+		0x74, 0xa9, 0x41, 0x97, 0x44, 0x89, 0x73, 0x91,
+		0x0, 0x63, 0x82, 0xa6, 0xf1, 0x27, 0xab, 0x1d,
+		0x9a, 0xc2, 0xd8, 0xc0, 0xa5, 0x98, 0x72, 0x6b,
+	}
+
 	// test load public key
 	key, err := x448.LoadPublicKey(pub[:])
 	require.Nil(t, err, "should return no error")
 	require.Equal(t, pub[:], key.Bytes(), "public key bytes not match")
 	require.Equal(t, pubHex, key.Hex(), "public key hex not match")
 
-	// test load with an error
+	// test load public key with an error
 	key, err = x448.LoadPublicKey(nil)
-	require.NotNil(t, err, "should return an error")
+	require.Equal(t, "public key is wrong: want 56 bytes, got 0 bytes",
+		err.Error(), "should return an error")
 	require.Nil(t, key, "key should nil")
+
+	// test load private key
+	privKey, err := x448.LoadPrivateKey(priv[:])
+	require.Nil(t, err, "should return no error")
+	require.Equal(t, priv[:], privKey.Bytes(), "private key bytes not match")
+	require.Equal(t, pub[:], privKey.PubKey().Bytes(),
+		"public key bytes not match")
+
+	// test load private key with an error
+	privKey, err = x448.LoadPrivateKey(nil)
+	require.Equal(t, "private key is wrong: want 56 bytes, got 0 bytes",
+		err.Error(), "should return no error")
+	require.Nil(t, privKey, "private key should be nil")
 }
 
 func TestDH448(t *testing.T) {
@@ -169,8 +193,8 @@ func TestDH448(t *testing.T) {
 	secret, err := alicePrivKey.DH(invalidPub)
 	require.Equal(t, EMPTY, secret,
 		"when public is wrong, no key pair should return")
-	require.Equal(t, dh.ErrMismatchedPublicKey, err,
-		"wrong error returned")
+	require.Equal(t, "public key is wrong: want 56 bytes, got 1 bytes",
+		err.Error(), "wrong error returned")
 
 	// check from Alice's view
 	secret, err = alicePrivKey.DH(bobPub[:])

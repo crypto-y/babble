@@ -33,7 +33,7 @@ func (pk *publicKeyBitcoin) Hex() string {
 // LoadBytes takes the input data and copies it into a dhlenBitcoin-byte array.
 func (pk *publicKeyBitcoin) LoadBytes(data []byte) error {
 	if len(data) != lenBitcoinPubKey {
-		return ErrMismatchedPublicKey
+		return errMismatchedKey("public", lenBitcoinPubKey, len(data))
 	}
 
 	pub, err := btcec.ParsePubKey(data, btcec.S256())
@@ -116,6 +116,16 @@ func (dh *curveBitcoin) GenerateKeyPair(entropy []byte) (PrivateKey, error) {
 	pk.Update(secret)
 
 	return pk, nil
+}
+
+// LoadPrivateKey uses the data provided to create a new private key.
+func (dh *curveBitcoin) LoadPrivateKey(data []byte) (PrivateKey, error) {
+	p := &privateKeyBitcoin{pub: &publicKeyBitcoin{}}
+	if len(data) != dhlenBitcoin {
+		return nil, errMismatchedKey("private", dhlenBitcoin, len(data))
+	}
+	p.Update(data)
+	return p, nil
 }
 
 // LoadPublicKey uses the data provided to create a new public key.
