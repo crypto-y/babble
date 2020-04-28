@@ -1,4 +1,7 @@
 // Package rekey defines the rekey functions to be used in the noise package.
+// For any customized rekey functions, the Rekeyer must be statisfied. Once
+// created, the rekeyer should be passed into the ProtocolConfig used in the
+// noise package.
 package rekey
 
 import (
@@ -7,32 +10,34 @@ import (
 	noiseCipher "github.com/yyforyongyu/noise/cipher"
 )
 
-const (
-	// DefaultRekeyInterval is used when RekeyInterval is unset.
-	DefaultRekeyInterval = noiseCipher.MaxNonce
+// CipherKeySize defines the byte length of the key returned from Rekey.
+const CipherKeySize = 32
 
-	// CipherKeySize defines the byte lengtj of the key used in cipher.
-	CipherKeySize = 32
+var (
+	errCorruptedNonce  = errors.New("Nonce is corrupted, please reset")
+	errInvalidInterval = errors.New("invalid interval value")
 )
-
-var ErrCorruptedNonce = errors.New("Nonce is corrupted, please reset")
 
 // Rekeyer defines a customized Rekey function to be used when rotating cipher
 // key.
-
-// Rekey doesn't reset n to zero because:
-
-// Leaving n unchanged is simple.
-
-// If the cipher has a weakness such that repeated rekeying gives rise to a cycle of keys, then letting n advance will avoid catastrophic reuse of the same k and n values.
-
-// Letting n advance puts a bound on the total number of encryptions that can be performed with a set of derived keys.
 type Rekeyer interface {
+	// Rekey creates a new key. The old key is passed in if the implementation
+	// uses algorithms which relies on the old cipher key to create the new key.
+	// A 32-byte key is returned.
 	Rekey(key []byte) [CipherKeySize]byte
 
+	// CheckRekey implements the logic to decide whether a rekey should be
+	// performed based on the given nonce. Other customized logic unrelated to
+	// the nonce can also be implemented.
 	CheckRekey(nonce uint64) (bool, error)
 
+	// ResetNonce tells the caller whether the cipher nonce should be reset to
+	// zero.
 	ResetNonce() bool
+
+	// Interval returns the number of messages to be sent before a rekey is
+	// performed.
+	Interval() uint64
 }
 
 type defaultRekeyer struct {
@@ -42,9 +47,20 @@ type defaultRekeyer struct {
 	RekeyInterval uint64
 	cipher        noiseCipher.AEAD
 	resetNonce    bool
+	count         uint64
 }
 
-func NewDefault(interval int, cipher noiseCipher.AEAD, resetNonce bool) Rekeyer {
+// NewDefault creates a default rekeyer defined by the noise protocol. It
+// returns a 32-byte key from calling the Rekey function defined in the cipher,
+// which is the result of ENCRYPT(k, maxnonce, zerolen, zeros), where maxnonce
+// equals 2^64-1, zerolen is a zero-length byte sequence, and zeros is a
+// sequence of 32 bytes filled with zeros.
+//
+// The parameter interval specifies after how many messages a rekey is
+// performed, and the resetNonce decides whether the nonce should be reset to
+// zero when performing rekey.
+func NewDefault(interval uint64, cipher noiseCipher.AEAD,
+	resetNonce bool) Rekeyer {
 	return &defaultRekeyer{
 		RekeyInterval: uint64(interval),
 		cipher:        cipher,
@@ -54,6 +70,7 @@ func NewDefault(interval int, cipher noiseCipher.AEAD, resetNonce bool) Rekeyer 
 
 func (d *defaultRekeyer) Rekey([]byte) [CipherKeySize]byte {
 	// use the default rekey from the cipher
+	// TODO: rm dependency on cipher
 	return d.cipher.Rekey()
 }
 
@@ -61,25 +78,25 @@ func (d *defaultRekeyer) ResetNonce() bool {
 	return d.resetNonce
 }
 
-func (d *defaultRekeyer) SetRekeyInterval(n int) error {
-	if uint64(n) >= noiseCipher.MaxNonce {
-		return noiseCipher.ErrNonceOverflow
-	}
-	d.RekeyInterval = uint64(n)
-	return nil
-}
-
 func (d *defaultRekeyer) CheckRekey(n uint64) (bool, error) {
-	// if nonce is greater than the value, it must be corrupted.
-	// Maybe this could happen from calling cipherState.SetNonce.
-	if n > d.RekeyInterval {
-		return false, ErrCorruptedNonce
+	// increase count
+	d.count = n % d.RekeyInterval
+
+	// If resetNonce is true and nonce is greater than the value, it must be
+	// corrupted.
+	// This could happen from calling cipherState.SetNonce.
+	if d.resetNonce && n > d.RekeyInterval {
+		return false, errCorruptedNonce
 	}
 
-	// when nonce reaches a given value, performs a rekey.
-	if n == d.RekeyInterval {
+	// when count reaches a given value, a rekey needs to be performed.
+	if d.count == uint64(0) {
 		return true, nil
 	}
 
 	return false, nil
+}
+
+func (d *defaultRekeyer) Interval() uint64 {
+	return d.RekeyInterval
 }
