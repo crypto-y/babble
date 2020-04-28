@@ -16,12 +16,12 @@ var (
 	errInvalidChainingKey = errors.New("chaining key size invalid")
 )
 
-// symmetricState object contains a cipherState plus ck and h variables. It is
+// symmetricState object contains a CipherState plus ck and h variables. It is
 // so-named because it encapsulates all the "symmetric crypto" used by Noise.
 // During the handshake phase each party has a single symmetricState, which can
 // be deleted once the handshake is finished.
 type symmetricState struct {
-	cs    *cipherState
+	cs    *CipherState
 	hash  hash.Hash
 	curve dh.Curve
 
@@ -124,7 +124,7 @@ func (s *symmetricState) HKDF(secret []byte, num int) ([][]byte, error) {
 // 	  hashOutput equal to protocolName with zero bytes appended to make HASHLEN
 // 	  bytes. Otherwise sets hashOutput = HASH(protocolName).
 // 	- Sets chainingKey = hashOutput.
-// 	- Calls InitializeKey(empty).
+// 	- Calls initializeKey(empty).
 func (s *symmetricState) InitializeSymmetric(protocolName []byte) {
 	// TODO: my understanding is that when the protocolName's size is less than
 	// HASHLEN, we should pad zeros to it, then hash it.
@@ -139,7 +139,7 @@ func (s *symmetricState) InitializeSymmetric(protocolName []byte) {
 
 	s.chainingKey = make([]byte, s.hash.HashLen())
 	copy(s.chainingKey, s.digest)
-	s.cs.InitializeKey(ZEROS)
+	s.cs.initializeKey(ZEROS)
 }
 
 // MixHash sets h = HASH(h || data) and writes it to digest.
@@ -151,7 +151,7 @@ func (s *symmetricState) MixHash(data []byte) {
 // MixKey executes the following steps:
 // 	- Sets chainingKey, tempKey = HKDF(chainingKey, keyMaterial, 2).
 // 	- If HASHLEN is 64, then truncates tempKey to 32 bytes.
-// 	- Calls InitializeKey(tempKey).
+// 	- Calls initializeKey(tempKey).
 func (s *symmetricState) MixKey(keyMaterial []byte) error {
 	var tempKey [CipherKeySize]byte
 
@@ -165,7 +165,7 @@ func (s *symmetricState) MixKey(keyMaterial []byte) error {
 	// truncate if HASHLEN is 64.
 	copy(tempKey[:], digests[1])
 
-	s.cs.InitializeKey(tempKey)
+	s.cs.initializeKey(tempKey)
 	return nil
 }
 
@@ -175,7 +175,7 @@ func (s *symmetricState) MixKey(keyMaterial []byte) error {
 // 		HKDF(chainingKey, keyMaterial, 3).
 // 	- Calls MixHash(tempHashOutput).
 // 	- If HASHLEN is 64, then truncates tempKey to 32 bytes.
-// 	- Calls InitializeKey(tempKey).
+// 	- Calls initializeKey(tempKey).
 func (s *symmetricState) MixKeyAndHash(keyMaterial []byte) error {
 	digests, err := s.HKDF(keyMaterial, 3)
 	if err != nil {
@@ -191,7 +191,7 @@ func (s *symmetricState) MixKeyAndHash(keyMaterial []byte) error {
 	copy(tempKey[:], digests[2])
 
 	s.MixHash(tempHashOutput)
-	s.cs.InitializeKey(tempKey)
+	s.cs.initializeKey(tempKey)
 
 	return nil
 }
@@ -201,7 +201,7 @@ func (s *symmetricState) MixKeyAndHash(keyMaterial []byte) error {
 func (s *symmetricState) Reset() {
 	s.chainingKey = nil
 	if s.cs != nil {
-		s.cs.Reset()
+		s.cs.reset()
 	}
 	s.cs = nil
 	s.digest = nil
@@ -209,14 +209,14 @@ func (s *symmetricState) Reset() {
 	s.curve = nil
 }
 
-// Split returns a pair of cipherState structs for encrypting transport
+// Split returns a pair of CipherState structs for encrypting transport
 // messages. Executes the following steps,
 // 	- Sets tempKey1, tempKey2 = HKDF(zerolen, 2).
 // 	- If HASHLEN is 64, then truncates tempKey1 and tempKey2 to 32 bytes.
-// 	- Creates two new cipherState instances c1 and c2.
-// 	- Calls c1.InitializeKey(tempKey1) and c2.InitializeKey(tempKey2).
+// 	- Creates two new CipherState instances c1 and c2.
+// 	- Calls c1.initializeKey(tempKey1) and c2.initializeKey(tempKey2).
 // 	- Returns the pair (c1, c2).
-func (s *symmetricState) Split() (c1, c2 *cipherState, err error) {
+func (s *symmetricState) Split() (c1, c2 *CipherState, err error) {
 	digests, err := s.HKDF(ZEROLEN, 2)
 	if err != nil {
 		return nil, nil, err
@@ -229,14 +229,14 @@ func (s *symmetricState) Split() (c1, c2 *cipherState, err error) {
 
 	c1 = newCipherState(s.cs.cipher, s.cs.RekeyManger)
 	c2 = newCipherState(s.cs.cipher, s.cs.RekeyManger)
-	c1.InitializeKey(tempKey1)
-	c2.InitializeKey(tempKey2)
+	c1.initializeKey(tempKey1)
+	c2.initializeKey(tempKey2)
 
 	return c1, c2, nil
 }
 
 func newSymmetricState(
-	cs *cipherState, h hash.Hash, c dh.Curve) *symmetricState {
+	cs *CipherState, h hash.Hash, c dh.Curve) *symmetricState {
 	ss := &symmetricState{
 		cs:    cs,
 		hash:  h,

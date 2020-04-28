@@ -22,11 +22,11 @@ var (
 	errMissingCipherKey = errors.New("No cipher key initialized")
 )
 
-// cipherState contains key and nonce variables, which it uses to encrypt and
+// CipherState contains key and nonce variables, which it uses to encrypt and
 // decrypt ciphertext. During the handshake phase each party has a single
-// cipherState, but during the transport phase each party has two cipherState
+// CipherState, but during the transport phase each party has two CipherState
 // instances, one for sending, and one for receiving.
-type cipherState struct {
+type CipherState struct {
 	// Rekeyer is a customized rekey function.
 	RekeyManger rekey.Rekeyer
 
@@ -50,8 +50,8 @@ type cipherState struct {
 //
 // If an authentication failure occurs in decryption then nonce is not
 // incremented and an error is signaled to the caller.
-func (cs *cipherState) DecryptWithAd(ad, ciphertext []byte) ([]byte, error) {
-	if !cs.HasKey() {
+func (cs *CipherState) DecryptWithAd(ad, ciphertext []byte) ([]byte, error) {
+	if !cs.hasKey() {
 		return ciphertext, nil
 	}
 
@@ -73,8 +73,8 @@ func (cs *cipherState) DecryptWithAd(ad, ciphertext []byte) ([]byte, error) {
 
 // EncryptWithAd encrypts plaintext with ad. If the key is non-empty it returns
 // the encrypted ciphertext, otherwise returns plaintext.
-func (cs *cipherState) EncryptWithAd(ad, plaintext []byte) ([]byte, error) {
-	if !cs.HasKey() {
+func (cs *CipherState) EncryptWithAd(ad, plaintext []byte) ([]byte, error) {
+	if !cs.hasKey() {
 		return plaintext, nil
 	}
 
@@ -91,15 +91,15 @@ func (cs *cipherState) EncryptWithAd(ad, plaintext []byte) ([]byte, error) {
 	return ciphertext, nil
 }
 
-// HashKey returns true if cipher key is not empty, otherwise false.
-func (cs *cipherState) HasKey() bool {
+// hashKey returns true if cipher key is not empty, otherwise false.
+func (cs *CipherState) hasKey() bool {
 	return !reflect.DeepEqual(cs.key, ZEROS)
 }
 
-// InitializeKey sets the cipher key and nonce.
-func (cs *cipherState) InitializeKey(k [CipherKeySize]byte) error {
+// initializeKey sets the cipher key and nonce.
+func (cs *CipherState) initializeKey(k [CipherKeySize]byte) error {
 	// clean cipher state first
-	cs.Reset()
+	cs.reset()
 
 	copy(cs.key[:], k[:])
 	if err := cs.cipher.InitCipher(cs.key); err != nil {
@@ -108,8 +108,13 @@ func (cs *cipherState) InitializeKey(k [CipherKeySize]byte) error {
 	return nil
 }
 
+// Nonce returns the current nonce value.
+func (cs *CipherState) Nonce() uint64 {
+	return cs.nonce
+}
+
 // Rekey updates the underlying cipher with a new key. If a rekeyer is defined
-// for the cipherstate, it's used to generate the new key. Otherwise, it uses
+// for the Cipherstate, it's used to generate the new key. Otherwise, it uses
 // the Rekey from the underlying cipher to generate a new key.
 //
 // There are actually two places to customize a Rekey function. First here, then
@@ -117,8 +122,8 @@ func (cs *cipherState) InitializeKey(k [CipherKeySize]byte) error {
 // Also note that Rekey only updates the cipher's key value, it doesn't reset the
 // cipher's nonce value, so applications performing Rekey must still perform
 // a new handshake if sending 2^64 or more transport messages.
-func (cs *cipherState) Rekey() error {
-	if !cs.HasKey() {
+func (cs *CipherState) Rekey() error {
+	if !cs.hasKey() {
 		// Must have been initialized before
 		return errMissingCipherKey
 	}
@@ -140,8 +145,8 @@ func (cs *cipherState) Rekey() error {
 	return nil
 }
 
-// Reset sets the cipher key to ZEROS, nonce to 0, and calls cipher.Reset.
-func (cs *cipherState) Reset() {
+// reset sets the cipher key to ZEROS, nonce to 0, and calls cipher.reset.
+func (cs *CipherState) reset() {
 	cs.key = ZEROS
 	cs.nonce = 0
 	cs.cipher.Reset()
@@ -149,13 +154,13 @@ func (cs *cipherState) Reset() {
 
 // SetNonce sets the nonce. This function is used for handling out-of-order
 // transport messages
-func (cs *cipherState) SetNonce(n uint64) {
+func (cs *CipherState) SetNonce(n uint64) {
 	cs.nonce = n
 }
 
 // incrementNonce increments and checks the nonce. When it reaches the value of
 // RekeyInterval, a rekey is performed.
-func (cs *cipherState) incrementNonce() error {
+func (cs *CipherState) incrementNonce() error {
 	cs.nonce++
 
 	// if no RekeyManger is attached, abort.
@@ -179,8 +184,8 @@ func (cs *cipherState) incrementNonce() error {
 }
 
 func newCipherState(
-	cipher noiseCipher.AEAD, rekeyer rekey.Rekeyer) *cipherState {
-	return &cipherState{
+	cipher noiseCipher.AEAD, rekeyer rekey.Rekeyer) *CipherState {
+	return &CipherState{
 		cipher:      cipher,
 		RekeyManger: rekeyer,
 	}

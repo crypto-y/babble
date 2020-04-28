@@ -1,6 +1,7 @@
 package noise
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -41,21 +42,21 @@ func TestInitializeHandshakeState(t *testing.T) {
 
 	// test long protocl name
 	hs, err := newHandshakeState(longProtocolName[:], prologue,
-		nil, true, nil, nil, nil, nil, nil, nil)
+		nil, true, nil, nil, nil, nil, nil, nil, false)
 	require.Nil(t, hs, "no handshake state created")
 	require.Equal(t, errProtocolNameInvalid, err,
 		"wrong protocol name error should be returned")
 
 	// test nil symmetric state
 	hs, err = newHandshakeState(protocolName, prologue, nil,
-		true, nil, nil, nil, nil, nil, nil)
+		true, nil, nil, nil, nil, nil, nil, false)
 	require.Nil(t, hs, "no handshake state created")
 	require.Equal(t, errMissingSymmetricState, err,
 		"missing symmetric state error should be returned")
 
 	// test nil handshake pattern
 	hs, err = newHandshakeState(protocolName, prologue, nil,
-		true, ss, nil, nil, nil, nil, nil)
+		true, ss, nil, nil, nil, nil, nil, false)
 	require.Nil(t, hs, "no handshake state created")
 	require.Equal(t, errMissingHandshakePattern, err,
 		"missing handshake pattern error should be returned")
@@ -64,28 +65,28 @@ func TestInitializeHandshakeState(t *testing.T) {
 	// key required in the KN handshake pattern.
 	KN, _ := pattern.FromString("KN")
 	hs, err = newHandshakeState(protocolName, prologue, nil,
-		true, ss, KN, nil, nil, nil, nil)
+		true, ss, KN, nil, nil, nil, nil, false)
 	require.Nil(t, hs, "no handshake state created")
 	require.NotNil(t, err, "an error should be returned from initialize")
 
 	// test missing psk token
 	NXpsk0, _ := pattern.FromString("NXpsk0")
 	hs, err = newHandshakeState(protocolName, prologue, nil,
-		true, ss, NXpsk0, nil, nil, nil, nil)
+		true, ss, NXpsk0, nil, nil, nil, nil, false)
 	require.Nil(t, hs, "no handshake state created")
 	require.Equal(t, errMismatchedPsks(1, 0), err,
 		"invalid psk size error should be returned")
 
 	// test wrong psk size
 	hs, err = newHandshakeState(protocolName, prologue, wrongPsk,
-		true, ss, NXpsk0, nil, nil, nil, nil)
+		true, ss, NXpsk0, nil, nil, nil, nil, false)
 	require.Nil(t, hs, "no handshake state created")
 	require.Equal(t, errInvalidPskSize, err,
 		"invalid psk size error should be returned")
 
 	// test successfully created a handshake state
 	hs, err = newHandshakeState(protocolName, prologue, pskToken,
-		true, ss, NXpsk0, nil, nil, nil, nil)
+		true, ss, NXpsk0, nil, nil, nil, nil, false)
 	require.Nil(t, err, "should return no error")
 	require.NotNil(t, hs, "should return an hs instance")
 }
@@ -117,7 +118,7 @@ func TestValidateKeys(t *testing.T) {
 			require.Nil(t, err, "error loading pattern")
 
 			hs, err := newHandshakeState(protocolName, prologue, pskToken,
-				tt.initiator, ss, p, tt.s, tt.e, tt.rs, tt.re)
+				tt.initiator, ss, p, tt.s, tt.e, tt.rs, tt.re, false)
 			require.Equal(t, tt.errExpected, err, "returned error not match")
 			require.Nil(t, hs, "hs should be nil")
 		})
@@ -146,13 +147,13 @@ func TestProcessPreMessage(t *testing.T) {
 		errExpected error
 	}{
 		{"missing local static key", true,
-			e, nil, re, rs, errMissingKey("local static")},
+			e, nil, re, rs, errMissingKey("local static key")},
 		{"missing remote static key", false,
-			e, s, re, nil, errMissingKey("remote static")},
+			e, s, re, nil, errMissingKey("remote static key")},
 		{"missing local ephemeral key", true,
-			nil, s, re, rs, errMissingKey("local ephemeral")},
+			nil, s, re, rs, errMissingKey("local ephemeral key")},
 		{"missing remote ephemeral key", false,
-			e, s, nil, rs, errMissingKey("remote ephemeral")},
+			e, s, nil, rs, errMissingKey("remote ephemeral key")},
 		{"initiator success passed pre-message check", true,
 			e, s, re, rs, nil},
 		{"responder success passed pre-message check", false,
@@ -162,7 +163,7 @@ func TestProcessPreMessage(t *testing.T) {
 	for _, tt := range testParams {
 		t.Run(tt.name, func(t *testing.T) {
 			hs, err := newHandshakeState(protocolName, prologue, pskToken,
-				tt.initiator, ss, YY, tt.s, tt.e, tt.rs, tt.re)
+				tt.initiator, ss, YY, tt.s, tt.e, tt.rs, tt.re, false)
 			if tt.errExpected != nil {
 				require.Nil(t, hs, "handshake state should not be created")
 			} else {
@@ -176,25 +177,25 @@ func TestProcessPreMessage(t *testing.T) {
 
 func TestincrementPatternIndexAndSplit(t *testing.T) {
 	hs, err := newHandshakeState(protocolName, prologue, nil,
-		true, ss, XN, nil, nil, nil, nil)
+		true, ss, XN, nil, nil, nil, nil, false)
 	require.Nil(t, err, "failed to create handshake state")
 	require.Equal(t, 0, hs.patternIndex, "pattern index is not 0")
-	require.Nil(t, hs.sendCipherState, "no send cipher inited")
-	require.Nil(t, hs.recvCipherState, "no recv cipher inited")
+	require.Nil(t, hs.SendCipherState, "no send cipher inited")
+	require.Nil(t, hs.RecvCipherState, "no recv cipher inited")
 
 	// increment once
 	err = hs.incrementPatternIndexAndSplit()
 	require.Nil(t, err, "failed to increment once")
 	require.Equal(t, 1, hs.patternIndex, "pattern index is not 1")
-	require.Nil(t, hs.sendCipherState, "should have no send cipher inited")
-	require.Nil(t, hs.recvCipherState, "should have no recv cipher inited")
+	require.Nil(t, hs.SendCipherState, "should have no send cipher inited")
+	require.Nil(t, hs.RecvCipherState, "should have no recv cipher inited")
 
 	// increment twice, should be finished
 	err = hs.incrementPatternIndexAndSplit()
 	require.Nil(t, err, "failed to increment once")
 	require.Equal(t, 2, hs.patternIndex, "pattern index is not 2")
-	require.NotNil(t, hs.sendCipherState, "should have send cipher inited")
-	require.NotNil(t, hs.recvCipherState, "should have recv cipher inited")
+	require.NotNil(t, hs.SendCipherState, "should have send cipher inited")
+	require.NotNil(t, hs.RecvCipherState, "should have recv cipher inited")
 
 	// make an overflow error
 	err = hs.incrementPatternIndexAndSplit()
@@ -203,22 +204,22 @@ func TestincrementPatternIndexAndSplit(t *testing.T) {
 
 	// make an invalid chain key error
 	hs, _ = newHandshakeState(protocolName, prologue, nil,
-		true, ss, XN, nil, nil, nil, nil)
+		true, ss, XN, nil, nil, nil, nil, false)
 	hs.ss.chainingKey = nil
 	// increase twice to trigger the error
 	hs.incrementPatternIndexAndSplit()
 	err = hs.incrementPatternIndexAndSplit()
 	require.NotNil(t, err, "should return an invalid chain size error")
 	require.Equal(t, 2, hs.patternIndex, "pattern index is not 1")
-	require.Nil(t, hs.sendCipherState, "should have no send cipher inited")
-	require.Nil(t, hs.recvCipherState, "should have no recv cipher inited")
+	require.Nil(t, hs.SendCipherState, "should have no send cipher inited")
+	require.Nil(t, hs.RecvCipherState, "should have no recv cipher inited")
 
 }
 
 func TestProcessReadTokenE(t *testing.T) {
 	// test when re is not empty
 	hs, err := newHandshakeState(protocolName, prologue, pskToken,
-		true, ss, XNpsk0, s, nil, rs, nil)
+		true, ss, XNpsk0, s, nil, rs, nil, false)
 	require.Nil(t, err, "failed to create handshake state")
 	hs.remoteEphemeralPub = re
 	p, err := hs.readTokenE(nil)
@@ -228,7 +229,7 @@ func TestProcessReadTokenE(t *testing.T) {
 
 	// test invalid payload
 	hs, err = newHandshakeState(protocolName, prologue, pskToken,
-		true, ss, XNpsk0, s, nil, rs, nil)
+		true, ss, XNpsk0, s, nil, rs, nil, false)
 	p, err = hs.readTokenE(nil)
 	require.Nil(t, p, "no payload should be returned")
 	require.Equal(t, errInvalidPayload, err, "should return errInvalidPayload")
@@ -251,7 +252,7 @@ func TestProcessReadTokenE(t *testing.T) {
 func TestProcessReadTokenS(t *testing.T) {
 	// test when rs is not empty
 	hs, err := newHandshakeState(protocolName, prologue, pskToken,
-		true, ss, XNpsk0, s, nil, nil, nil)
+		true, ss, XNpsk0, s, nil, nil, nil, false)
 	require.Nil(t, err, "failed to create handshake state")
 	hs.remoteStaticPub = rs
 	p, err := hs.readTokenS(nil)
@@ -261,7 +262,7 @@ func TestProcessReadTokenS(t *testing.T) {
 
 	// test invalid payload
 	hs, err = newHandshakeState(protocolName, prologue, pskToken,
-		true, ss, XNpsk0, s, nil, nil, nil)
+		true, ss, XNpsk0, s, nil, nil, nil, false)
 	p, err = hs.readTokenS(nil)
 	require.Nil(t, p, "no payload should be returned")
 	require.Equal(t, errInvalidPayload, err, "should return errInvalidPayload")
@@ -281,7 +282,7 @@ func TestProcessReadTokenS(t *testing.T) {
 
 	// test failed to decrypt
 	hs, err = newHandshakeState(protocolName, prologue, pskToken,
-		true, ss, XN, s, nil, nil, nil)
+		true, ss, XN, s, nil, nil, nil, false)
 	hs.ss.cs.key = key
 	payload = append(key[:], pubBitcoin[:]...)
 	p, err = hs.readTokenS(payload)
@@ -294,7 +295,7 @@ func TestProcessReadTokenS(t *testing.T) {
 func TestProcessTokenPsk(t *testing.T) {
 	// test success
 	hs, err := newHandshakeState(protocolName, prologue, pskToken,
-		true, ss, XNpsk0, s, nil, nil, nil)
+		true, ss, XNpsk0, s, nil, nil, nil, false)
 	require.Nil(t, err, "failed to create handshake state")
 	err = hs.processTokenPsk()
 	require.Nil(t, err, "should return no error")
@@ -345,7 +346,7 @@ func TestProcessTokenDH(t *testing.T) {
 			errMissingKey("missing key when performing DH")},
 		{"failed when performing on a wrong pubkey in DH",
 			pattern.TokenEe, true, e, wrongRe, rs,
-			dh.ErrMismatchedPublicKey},
+			errors.New("public key is wrong: want 33 bytes, got 32 bytes")},
 		{"failed to process on a wrong token",
 			pattern.TokenS, true, e, re, rs,
 			errInvalidDHToken(pattern.TokenS)},
@@ -356,7 +357,7 @@ func TestProcessTokenDH(t *testing.T) {
 
 			// test setup
 			hs, err := newHandshakeState(protocolName, prologue, pskToken,
-				tt.initiator, ss, XN, s, nil, nil, nil)
+				tt.initiator, ss, XN, s, nil, nil, nil, false)
 			require.Nil(t, err, "failed to create handshake state")
 
 			oldCk := hs.ss.chainingKey
@@ -415,7 +416,7 @@ func TestProcessReadToken(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// test setup
 			hs, err := newHandshakeState(protocolName, prologue, pskToken,
-				true, ss, XN, s, nil, tt.rs, nil)
+				true, ss, XN, s, nil, tt.rs, nil, false)
 			require.Nil(t, err, "failed to create handshake state")
 
 			hs.remoteEphemeralPub = tt.re
@@ -428,7 +429,7 @@ func TestProcessReadToken(t *testing.T) {
 
 	// test an edge case for psk
 	hs, err := newHandshakeState(protocolName, prologue, pskToken,
-		true, ss, XN, s, nil, rs, nil)
+		true, ss, XN, s, nil, rs, nil, false)
 	require.Nil(t, err, "failed to create handshake state")
 	hs.pskIndex = 1
 	payload, err := hs.processReadToken(pattern.TokenPsk, nil)
@@ -441,7 +442,7 @@ func TestProcessWriteTokenE(t *testing.T) {
 
 	// test when e is not empty
 	hs, err := newHandshakeState(protocolName, prologue, pskToken,
-		true, ss, XNpsk0, s, nil, rs, nil)
+		true, ss, XNpsk0, s, nil, rs, nil, false)
 	require.Nil(t, err, "failed to create handshake state")
 
 	oldDigest := hs.ss.digest
@@ -455,7 +456,7 @@ func TestProcessWriteTokenE(t *testing.T) {
 
 	// test success
 	hs, err = newHandshakeState(protocolName, prologue, pskToken,
-		true, ss, XNpsk0, s, nil, rs, nil)
+		true, ss, XNpsk0, s, nil, rs, nil, false)
 	require.Nil(t, err, "failed to create handshake state")
 
 	oldDigest = hs.ss.digest
@@ -469,7 +470,7 @@ func TestProcessWriteTokenE(t *testing.T) {
 func TestProcessWriteTokenS(t *testing.T) {
 	payload := []byte{}
 	hs, err := newHandshakeState(protocolName, prologue, pskToken,
-		true, ss, XNpsk0, s, nil, nil, nil)
+		true, ss, XNpsk0, s, nil, nil, nil, false)
 	require.Nil(t, err, "failed to create handshake state")
 
 	// test missing key
@@ -484,7 +485,7 @@ func TestProcessWriteTokenS(t *testing.T) {
 	hs.localStatic = s
 	p, err = hs.writeTokenS(payload)
 	require.Nil(t, err, "should have no error")
-	require.False(t, hs.ss.cs.HasKey(), "should have no key")
+	require.False(t, hs.ss.cs.hasKey(), "should have no key")
 	require.Equal(t, s.PubKey().Bytes(), p,
 		"payload should local static public key")
 	require.NotEqual(t, oldDigest, hs.ss.digest, "digest should change")
@@ -503,7 +504,7 @@ func TestProcessWriteToken(t *testing.T) {
 
 	// test error when processing token e
 	hs, err := newHandshakeState(protocolName, prologue, pskToken,
-		true, ss, XNpsk0, s, nil, rs, nil)
+		true, ss, XNpsk0, s, nil, rs, nil, false)
 	require.Nil(t, err, "failed to create handshake state")
 
 	hs.localEphemeral = e
@@ -534,7 +535,7 @@ func TestProcessWriteToken(t *testing.T) {
 
 	// test process the line "e, s"
 	hs, err = newHandshakeState(protocolName, prologue, pskToken,
-		true, ss, XNpsk0, s, nil, rs, nil)
+		true, ss, XNpsk0, s, nil, rs, nil, false)
 	p, err = hs.processWriteToken(pattern.TokenE, payload)
 	require.Nil(t, err, "should return no error")
 	require.Equal(t, len(pubBitcoin), len(p),
@@ -555,7 +556,7 @@ func TestReadMessageErrors(t *testing.T) {
 	// <- e, ee
 	// -> s, se
 	hs, _ := newHandshakeState(protocolName, prologue, pskToken,
-		true, ss, XNpsk0, s, nil, rs, nil)
+		true, ss, XNpsk0, s, nil, rs, nil, false)
 
 	// test message too big
 	bigMessage := [maxMessageSize + 1]byte{}
@@ -610,7 +611,7 @@ func TestWriteMessageErrors(t *testing.T) {
 	YYYpsk0, _ := pattern.FromString("YYYpsk0")
 
 	hs, err := newHandshakeState(protocolName, prologue, pskToken,
-		true, ss, YYYpsk0, s, nil, nil, nil)
+		true, ss, YYYpsk0, s, nil, nil, nil, false)
 	require.Nil(t, err, "should return no error")
 
 	// test message too big
@@ -660,9 +661,9 @@ func TestWriteMessageErrors(t *testing.T) {
 
 func TestReset(t *testing.T) {
 	hs, _ := newHandshakeState(protocolName, prologue, pskToken,
-		true, ss, XNpsk0, s, nil, rs, nil)
+		true, ss, XNpsk0, s, nil, rs, nil, false)
 
-	hs.Reset()
+	hs.reset()
 	require.Nil(t, hs.psks, "reset psks")
 	require.Equal(t, 0, hs.patternIndex, "reset patternIndex")
 	require.False(t, hs.initiator, "reset initiator")
@@ -672,8 +673,8 @@ func TestReset(t *testing.T) {
 	require.Nil(t, hs.localEphemeral, "reset localEphemeral")
 	require.Nil(t, hs.remoteEphemeralPub, "reset remoteEphemeralPub")
 	require.Nil(t, hs.ss, "reset ss")
-	require.Nil(t, hs.sendCipherState, "reset sendCipherState")
-	require.Nil(t, hs.recvCipherState, "reset recvCipherState")
+	require.Nil(t, hs.SendCipherState, "reset SendCipherState")
+	require.Nil(t, hs.RecvCipherState, "reset RecvCipherState")
 }
 
 func TestHandshakeState(t *testing.T) {
@@ -686,11 +687,11 @@ func TestHandshakeState(t *testing.T) {
 	sBob, _ := curveB.GenerateKeyPair(nil)
 
 	alice, err := newHandshakeState(protocolName, prologue, pskToken,
-		true, ssA, XN, sAlice, nil, nil, nil)
+		true, ssA, XN, sAlice, nil, nil, nil, false)
 	require.Nil(t, err, "alice failed to create handshake state")
 
 	bob, err := newHandshakeState(protocolName, prologue, pskToken,
-		false, ssB, XN, sBob, nil, nil, nil)
+		false, ssB, XN, sBob, nil, nil, nil, false)
 	require.Nil(t, err, "bob failed to create handshake state")
 
 	// alice writes message, -> e
@@ -744,22 +745,29 @@ func TestHandshakeState(t *testing.T) {
 	require.True(t, bob.Finished(), "bob should finish")
 
 	// both alice and bob should have a pair of cipher state
-	require.NotNil(t, alice.sendCipherState, "alice's sendCipherState")
-	require.NotNil(t, alice.recvCipherState, "alice's recvCipherState")
-	require.NotNil(t, bob.sendCipherState, "bob's sendCipherState")
-	require.NotNil(t, bob.recvCipherState, "bob's recvCipherState")
+	require.NotNil(t, alice.SendCipherState, "alice's SendCipherState")
+	require.NotNil(t, alice.RecvCipherState, "alice's RecvCipherState")
+	require.NotNil(t, bob.SendCipherState, "bob's SendCipherState")
+	require.NotNil(t, bob.RecvCipherState, "bob's RecvCipherState")
 
 	// the cipher state keys should match
-	require.Equal(t, alice.sendCipherState.key, bob.recvCipherState.key,
+	require.Equal(t, alice.SendCipherState.key, bob.RecvCipherState.key,
 		"alice's send not match bob's recv")
-	require.Equal(t, bob.sendCipherState.key, alice.recvCipherState.key,
+	require.Equal(t, bob.SendCipherState.key, alice.RecvCipherState.key,
 		"bob's send not match alice's recv")
 
+	// test getinfo
+	// TODO: test the info format
+	_, err = alice.GetInfo()
+	require.Nil(t, err, "GetInfo failed")
+	_, err = bob.GetInfo()
+	require.Nil(t, err, "GetInfo failed")
+
 	// test reset
-	alice.Reset()
-	require.Nil(t, alice.sendCipherState, "reset sendCipherState")
-	require.Nil(t, alice.recvCipherState, "reset recvCipherState")
-	bob.Reset()
-	require.Nil(t, bob.sendCipherState, "reset sendCipherState")
-	require.Nil(t, bob.recvCipherState, "reset recvCipherState")
+	alice.reset()
+	require.Nil(t, alice.SendCipherState, "reset SendCipherState")
+	require.Nil(t, alice.RecvCipherState, "reset RecvCipherState")
+	bob.reset()
+	require.Nil(t, bob.SendCipherState, "reset SendCipherState")
+	require.Nil(t, bob.RecvCipherState, "reset RecvCipherState")
 }

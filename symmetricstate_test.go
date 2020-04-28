@@ -76,8 +76,8 @@ func TestSymmetricState(t *testing.T) {
 		t, ciphertext, plaintext, "plaintext should be the same as ciphertext")
 
 	// init cipher state and test again
-	csA.InitializeKey(key)
-	csB.InitializeKey(key)
+	csA.initializeKey(key)
+	csB.initializeKey(key)
 	ciphertext, err = alice.EncryptAndHash(message)
 	require.Nil(t, err, "encrypt without error")
 
