@@ -86,7 +86,7 @@ func TestCipherStateNoRekeyManager(t *testing.T) {
 }
 
 func TestCipherStateDefaultRekeyManager(t *testing.T) {
-	interval := 3
+	interval := uint64(3)
 
 	rekeyerA := rekey.NewDefault(interval, cipherA, true)
 	rekeyerB := rekey.NewDefault(interval, cipherB, true)
@@ -136,6 +136,7 @@ func TestCipherStateDefaultRekeyManager(t *testing.T) {
 	// use a big nonce to cause an error in rekey
 	alice.SetNonce(uint64(interval + 1))
 	ciphertext, err = alice.EncryptWithAd(ad, message)
-	require.Equal(t, rekey.ErrCorruptedNonce, err, "should return nonce corrupted")
+	require.Equal(t, "Nonce is corrupted, please reset", err.Error(),
+		"should return nonce corrupted")
 	require.Nil(t, ciphertext, "no ciphertext encrypted")
 }

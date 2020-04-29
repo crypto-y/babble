@@ -77,6 +77,16 @@ func (hs *HandshakeState) Finished() bool {
 	return hs.patternIndex == len(hs.hp.MessagePattern)
 }
 
+// GetChainingKey returns the chaining key in use.
+func (hs *HandshakeState) GetChainingKey() []byte {
+	return hs.ss.chainingKey[:]
+}
+
+// GetDigest returns the hash digest in use.
+func (hs *HandshakeState) GetDigest() []byte {
+	return hs.ss.GetHandshakeHash()
+}
+
 // GetInfo gives a full picture of the handshake internal state.
 func (hs *HandshakeState) GetInfo() ([]byte, error) {
 	// extract pre-message pattern
@@ -127,6 +137,16 @@ func (hs *HandshakeState) GetInfo() ([]byte, error) {
 		RemoteStaticPub    string `json:"remote_static_pub"`
 	}
 
+	type cipher struct {
+		Key   string `json:"key"`
+		Nonce uint64 `json:"nonce"`
+	}
+
+	type rekey struct {
+		Interval   uint64 `json:"interval"`
+		ResetNonce bool   `json:"reset_nonce"`
+	}
+
 	type info struct {
 		ChainingKey string  `json:"chaining_key"`
 		CipherKey   string  `json:"cipher_key"`
@@ -135,12 +155,21 @@ func (hs *HandshakeState) GetInfo() ([]byte, error) {
 		KeyPair     keyPair `json:"key_pair"`
 		Nonce       uint64  `json:"nonce"`
 		Pattern     pattern `json:"pattern"`
+		SendCipher  cipher  `json:"send_cipher"`
+		RecvCipher  cipher  `json:"recv_cipher"`
+		Rekey       rekey   `json:"rekey"`
 	}
 
 	// extract psk info
 	psks := map[string]string{}
 	for i, p := range hs.psks {
 		psks["psk"+strconv.Itoa(i)] = fmt.Sprintf("%x", p)
+	}
+
+	rk := rekey{}
+	if hs.ss.cs.RekeyManger != nil {
+		rk.Interval = hs.ss.cs.RekeyManger.Interval()
+		rk.ResetNonce = hs.ss.cs.RekeyManger.ResetNonce()
 	}
 
 	// extract local/remote key pair info
@@ -186,7 +215,17 @@ func (hs *HandshakeState) GetInfo() ([]byte, error) {
 				Keys: psks,
 			},
 		},
+		SendCipher: cipher{
+			Key:   fmt.Sprintf("%x", hs.SendCipherState.key),
+			Nonce: hs.SendCipherState.nonce,
+		},
+		RecvCipher: cipher{
+			Key:   fmt.Sprintf("%x", hs.RecvCipherState.key),
+			Nonce: hs.RecvCipherState.nonce,
+		},
+		Rekey: rk,
 	}
+
 	return jsonMarshal(i)
 }
 

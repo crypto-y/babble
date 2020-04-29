@@ -1,3 +1,14 @@
+// Package noise implements the Noise Protocol Framework.
+//  https://noiseprotocol.org/
+// Supported patterns:
+//  3 oneway patterns, 12 interactive patterns and 23 deffered patterns, with
+//  PSK mode supported.
+// Supported dh curves:
+//  curve448, curve25519 and secp256k1
+// Supported ciphers:
+//  ChaCha20-Poly1305 and AESGCM
+// Supported hash functions:
+//  SHA256, SHA512, BLAKE2b and BLAKE2s
 package noise
 
 import (
@@ -15,9 +26,18 @@ import (
 // NoisePrefix is the mandatory prefix defined by the noise protocol framework.
 const NoisePrefix = "Noise"
 
-const defaultRekeyInterval = 10000
+const (
+	defaultRekeyInterval = 10000
+	defaultResetNonce    = true
+)
 
 var (
+	// ErrInvalidRekeyInterval is returned when interval is 0.
+	ErrInvalidRekeyInterval = errors.New("rekey interval cannot be 0")
+
+	// ErrMissingConfig is returned when no config file is provided.
+	ErrMissingConfig = errors.New("missing config")
+
 	// ErrProtocolInvalidName is returned when protocol name is wrong.
 	ErrProtocolInvalidName = errors.New("invalid potocol name")
 
@@ -25,8 +45,15 @@ var (
 	// ErrProtocolNotSupported = errors.New("protocol not supported")
 )
 
-func errInvalidComponent(c string) error {
-	return fmt.Errorf("component '%s' is not supported", c)
+// DefaultRekeyerConfig is used for creating the default rekey manager.
+type DefaultRekeyerConfig struct {
+	// Interval specifies the number of messages to be sent before a rekey is
+	// performed.
+	Interval uint64
+
+	// ResetNonce decides whether to reset the cipher nonce to zero when a rekey
+	// is performed.
+	ResetNonce bool
 }
 
 // ProtocolConfig is used for constructing a new handshake state.
@@ -42,6 +69,10 @@ type ProtocolConfig struct {
 	// handskake state. Both parties must provide identical prologue data,
 	// otherwisethe handshake will fail due to a decryption error.
 	Prologue string
+
+	// RekeyerConfig is a config used for set up the default rekeyer. If Rekeyer
+	// is set, this variable is ignored.
+	RekeyerConfig *DefaultRekeyerConfig
 
 	// Rekeyer is a rekey manager, which controls when/how a rekey should be
 	// performed, and whether the cipher nonce should be reset.
@@ -103,7 +134,7 @@ func NewProtocol(name, prologue string,
 	initiator bool) (*HandshakeState, error) {
 	// name must not be empty
 	if name == "" {
-		return nil, fmt.Errorf("missing config name")
+		return nil, ErrProtocolInvalidName
 	}
 
 	// parse handshake config
@@ -111,8 +142,9 @@ func NewProtocol(name, prologue string,
 	if err != nil {
 		return nil, err
 	}
-	// TODO: rm dependency on cipher
-	rekeyer := rekey.NewDefault(defaultRekeyInterval, hsc.cipher, true)
+	// create a default rekeyer
+	rekeyer := rekey.NewDefault(
+		defaultRekeyInterval, hsc.cipher, defaultResetNonce)
 
 	config := &ProtocolConfig{
 		Name:        name,
@@ -125,18 +157,39 @@ func NewProtocol(name, prologue string,
 }
 
 // NewProtocolWithConfig creates a handshake state with parameters from a
-//  ProtocolConfig.
+// ProtocolConfig.
 func NewProtocolWithConfig(config *ProtocolConfig) (*HandshakeState, error) {
+	if config == nil {
+		return nil, ErrMissingConfig
+	}
 	// name must not be empty
 	name := config.Name
 	if name == "" {
-		return nil, fmt.Errorf("missing config name")
+		return nil, ErrProtocolInvalidName
 	}
 
 	// parse handshake config
 	hsc, err := parseProtocolName(name)
 	if err != nil {
 		return nil, err
+	}
+
+	// create a default rekeyer if no rekeyer is specified
+	var rk rekey.Rekeyer
+	if config.Rekeyer == nil {
+		rc := config.RekeyerConfig
+		// if no rekeyer config is provided, use the default parameters.
+		if rc == nil {
+			rk = rekey.NewDefault(defaultRekeyInterval, hsc.cipher, true)
+		} else {
+			i := rc.Interval
+			if i == 0 {
+				return nil, ErrInvalidRekeyInterval
+			}
+			rk = rekey.NewDefault(rc.Interval, hsc.cipher, rc.ResetNonce)
+		}
+	} else {
+		rk = config.Rekeyer
 	}
 
 	// parse related keys
@@ -173,7 +226,7 @@ func NewProtocolWithConfig(config *ProtocolConfig) (*HandshakeState, error) {
 	hsc.prologue = []byte(config.Prologue)
 
 	// create cipher state, symmetric state and handshake state
-	cs := newCipherState(hsc.cipher, config.Rekeyer)
+	cs := newCipherState(hsc.cipher, rk)
 	ss := newSymmetricState(cs, hsc.hash, hsc.curve)
 	hs, err := newHandshakeState(
 		hsc.protocolName, hsc.prologue,
@@ -184,6 +237,10 @@ func NewProtocolWithConfig(config *ProtocolConfig) (*HandshakeState, error) {
 	}
 
 	return hs, nil
+}
+
+func errInvalidComponent(c string) error {
+	return fmt.Errorf("component '%s' is not supported", c)
 }
 
 // parseProtocolName takes a full protocol name and parse out the four
