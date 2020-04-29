@@ -44,7 +44,7 @@ var (
 // NewCipher returns an instance of a cipher.
 type NewCipher func() AEAD
 
-// AEAD specifies an interface for building a cipher used by the noise package.
+// AEAD specifies an interface for building a cipher used by the babbel package.
 type AEAD interface {
 	fmt.Stringer
 

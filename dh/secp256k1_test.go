@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/yyforyongyu/noise/dh"
+	"github.com/yyforyongyu/babble/dh"
 )
 
 var secp256k1, _ = dh.FromString("secp256k1")

@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	noiseCipher "github.com/yyforyongyu/noise/cipher"
+	noiseCipher "github.com/yyforyongyu/babble/cipher"
 )
 
 func TestDefaultRekeyer(t *testing.T) {

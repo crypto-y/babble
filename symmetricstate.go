@@ -1,12 +1,12 @@
-package noise
+package babble
 
 import (
-	// noiseCipher "github.com/yyforyongyu/noise/cipher"
+	// noiseCipher "github.com/yyforyongyu/babble/cipher"
 	"crypto/sha256"
 	"errors"
 
-	"github.com/yyforyongyu/noise/dh"
-	"github.com/yyforyongyu/noise/hash"
+	"github.com/yyforyongyu/babble/dh"
+	"github.com/yyforyongyu/babble/hash"
 	"golang.org/x/crypto/hkdf"
 )
 

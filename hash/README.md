@@ -15,7 +15,7 @@ Four hash functions are supported, as specified in the [noise specs](https://noi
 
 # Customize Hash Functions
 
-To create your own hash function, you'll need to implement the interface specified in [`hash.go`](https://github.com/yyforyongyu/noise/blob/master/hash/hash.go). Once implemented, you need to register it using `Register(Name, Hash)`.
+To create your own hash function, you'll need to implement the interface specified in [`hash.go`](https://github.com/yyforyongyu/babble/blob/master/hash/hash.go). Once implemented, you need to register it using `Register(Name, Hash)`.
 
 An example customized implementation, which implements the `SHA3`.
 
@@ -29,7 +29,7 @@ import (
 
 	"golang.org/x/crypto/sha3"
 
-	noiseHash "github.com/yyforyongyu/noise/hash"
+	noiseHash "github.com/yyforyongyu/babble/hash"
 )
 
 type hashSha3 struct {

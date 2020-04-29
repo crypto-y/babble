@@ -1,4 +1,4 @@
-// Package rekey defines the rekey functions to be used in the noise package.
+// Package rekey defines the rekey functions to be used in the babbel package.
 // For any customized rekey functions, the Rekeyer must be statisfied. Once
 // created, the rekeyer should be passed into the ProtocolConfig used in the
 // noise package.
@@ -7,7 +7,7 @@ package rekey
 import (
 	"errors"
 
-	noiseCipher "github.com/yyforyongyu/noise/cipher"
+	noiseCipher "github.com/yyforyongyu/babble/cipher"
 )
 
 // CipherKeySize defines the byte length of the key returned from Rekey.

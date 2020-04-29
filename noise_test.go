@@ -1,12 +1,12 @@
-package noise
+package babble
 
 import (
 	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	noiseCipher "github.com/yyforyongyu/noise/cipher"
-	"github.com/yyforyongyu/noise/rekey"
+	noiseCipher "github.com/yyforyongyu/babble/cipher"
+	"github.com/yyforyongyu/babble/rekey"
 )
 
 func TestNewProtocolWithConfig(t *testing.T) {

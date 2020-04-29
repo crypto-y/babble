@@ -141,7 +141,7 @@ func (dh *curveBitcoin) LoadPublicKey(data []byte) (PublicKey, error) {
 //
 // Note that for secp256k1, the private key size is 32-byte, while the public
 // key size is 33-byte. Because the Size param is used for specifying the public
-// size for the noise package, we return the lenBitcoinPubKey instead of dhlen.
+// size for the babble package, we return the lenBitcoinPubKey instead of dhlen.
 func (dh *curveBitcoin) Size() int {
 	// return dh.DHLEN
 	return lenBitcoinPubKey

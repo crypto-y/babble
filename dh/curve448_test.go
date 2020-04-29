@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/yyforyongyu/noise/dh"
+	"github.com/yyforyongyu/babble/dh"
 )
 
 var x448, _ = dh.FromString("448")

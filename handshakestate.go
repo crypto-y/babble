@@ -1,4 +1,4 @@
-package noise
+package babble
 
 import (
 	"bytes"
@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/yyforyongyu/noise/dh"
-	"github.com/yyforyongyu/noise/pattern"
+	"github.com/yyforyongyu/babble/dh"
+	"github.com/yyforyongyu/babble/pattern"
 )
 
 // maxMessageSize defines the max message size in bytes.

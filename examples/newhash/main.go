@@ -7,7 +7,7 @@ import (
 
 	"golang.org/x/crypto/sha3"
 
-	noiseHash "github.com/yyforyongyu/noise/hash"
+	noiseHash "github.com/yyforyongyu/babble/hash"
 )
 
 type hashSha3 struct {

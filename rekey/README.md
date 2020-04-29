@@ -26,7 +26,7 @@ The `interval` parameter specifies the number of messages to be encrypted/decryp
 - `zerolen` is a zero-length byte sequence,
 - `zeros` is a sequence of 32 bytes filled with zeros.
 
-When used by the package noise, if unspecified, a default value of `10000` will be used as `interval`, and `resetNonce` is default to `true`.
+When used by the package babble, if unspecified, a default value of `10000` will be used as `interval`, and `resetNonce` is default to `true`.
 
 ### Customized Rekeyer
 

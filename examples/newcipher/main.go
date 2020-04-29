@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	noiseCipher "github.com/yyforyongyu/noise/cipher"
+	noiseCipher "github.com/yyforyongyu/babble/cipher"
 	"golang.org/x/crypto/chacha20poly1305"
 )
 
@@ -92,10 +92,10 @@ func newCipher() noiseCipher.AEAD {
 }
 
 func main() {
-	// Register it for package noise.
+	// Register it for package babble.
 	noiseCipher.Register("ChaChaPolyX", newCipher)
 
-	// Once registered, inside the package noise, it can be called as,
+	// Once registered, inside the package babble, it can be called as,
 	// noiseCipher.FromString("ChaChaPolyX")
 	c, _ := noiseCipher.FromString("ChaChaPolyX")
 	fmt.Println(c)

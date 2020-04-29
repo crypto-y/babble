@@ -1,11 +1,11 @@
-package noise
+package babble
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	noiseCipher "github.com/yyforyongyu/noise/cipher"
-	"github.com/yyforyongyu/noise/rekey"
+	noiseCipher "github.com/yyforyongyu/babble/cipher"
+	"github.com/yyforyongyu/babble/rekey"
 )
 
 func TestCipherStateNoRekeyManager(t *testing.T) {
@@ -57,7 +57,7 @@ func TestCipherStateNoRekeyManager(t *testing.T) {
 
 	// test set nonce
 	alice.SetNonce(maxNonce)
-	require.Equal(t, maxNonce, alice.Nonce(), "noise should be equal")
+	require.Equal(t, maxNonce, alice.Nonce(), "nonce should be equal")
 
 	// alice has no key, both encrypt/decrypt should return plaintext
 	ciphertext, err = alice.EncryptWithAd(ad, message)

@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/yyforyongyu/noise/dh"
+	"github.com/yyforyongyu/babble/dh"
 )
 
 // DHLEN must be >= 32.

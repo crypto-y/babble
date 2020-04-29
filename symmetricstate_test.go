@@ -1,13 +1,13 @@
-package noise
+package babble
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/yyforyongyu/noise/cipher"
-	noiseCipher "github.com/yyforyongyu/noise/cipher"
-	noiseCurve "github.com/yyforyongyu/noise/dh"
-	noiseHash "github.com/yyforyongyu/noise/hash"
+	"github.com/yyforyongyu/babble/cipher"
+	noiseCipher "github.com/yyforyongyu/babble/cipher"
+	noiseCurve "github.com/yyforyongyu/babble/dh"
+	noiseHash "github.com/yyforyongyu/babble/hash"
 )
 
 var (

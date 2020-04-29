@@ -24,7 +24,7 @@ Two cipher functions are supported, as specified in the [noise specs](https://no
 
 # Customized Cipher Functions
 
-To create your own cipher function, you'll need to implement the interface specified in [`cipher.go`](https://github.com/yyforyongyu/noise/blob/master/cipher/cipher.go). Once implemented, you need to register it using `Register(Name, Cipher)`.
+To create your own cipher function, you'll need to implement the interface specified in [`cipher.go`](https://github.com/yyforyongyu/babble/blob/master/cipher/cipher.go). Once implemented, you need to register it using `Register(Name, Cipher)`.
 
 An example customized implementation, which implements the `ChaChaPolyX`.
 
@@ -36,7 +36,7 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	noiseCipher "github.com/yyforyongyu/noise/cipher"
+	noiseCipher "github.com/yyforyongyu/babble/cipher"
 	"golang.org/x/crypto/chacha20poly1305"
 )
 
@@ -106,10 +106,10 @@ func (nc *NewCipher) String() string {
 func main() {
 	var ChaChaPolyX noiseCipher.AEAD = &NewCipher{}
 
-	// Register it for package noise.
+	// Register it for package babble.
 	noiseCipher.Register(ChaChaPolyX.String(), ChaChaPolyX)
 
-	// Once registered, inside the package noise, it can be called as,
+	// Once registered, inside the package babble, it can be called as,
 	// noiseCipher.FromString("ChaChaPolyX")
 	fmt.Println(noiseCipher.FromString("ChaChaPolyX"))
 }

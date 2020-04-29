@@ -1,4 +1,4 @@
-// Package noise implements the Noise Protocol Framework.
+// Package babble implements the Noise Protocol Framework.
 //  https://noiseprotocol.org/
 // Supported patterns:
 //  3 oneway patterns, 12 interactive patterns and 23 deffered patterns, with
@@ -9,18 +9,18 @@
 //  ChaCha20-Poly1305 and AESGCM
 // Supported hash functions:
 //  SHA256, SHA512, BLAKE2b and BLAKE2s
-package noise
+package babble
 
 import (
 	"errors"
 	"fmt"
 	"strings"
 
-	"github.com/yyforyongyu/noise/cipher"
-	"github.com/yyforyongyu/noise/dh"
-	"github.com/yyforyongyu/noise/hash"
-	"github.com/yyforyongyu/noise/pattern"
-	"github.com/yyforyongyu/noise/rekey"
+	"github.com/yyforyongyu/babble/cipher"
+	"github.com/yyforyongyu/babble/dh"
+	"github.com/yyforyongyu/babble/hash"
+	"github.com/yyforyongyu/babble/pattern"
+	"github.com/yyforyongyu/babble/rekey"
 )
 
 // NoisePrefix is the mandatory prefix defined by the noise protocol framework.

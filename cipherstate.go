@@ -1,12 +1,12 @@
-package noise
+package babble
 
 import (
 	"reflect"
 
 	"errors"
 
-	noiseCipher "github.com/yyforyongyu/noise/cipher"
-	"github.com/yyforyongyu/noise/rekey"
+	noiseCipher "github.com/yyforyongyu/babble/cipher"
+	"github.com/yyforyongyu/babble/rekey"
 )
 
 // CipherKeySize defines the byte length of the key used for cipher.
@@ -41,7 +41,7 @@ type CipherState struct {
 	// nonce is the n in the noise specs.
 	nonce uint64
 
-	// cipher is an AEAD defined from package noise/cipher.
+	// cipher is an AEAD defined from package babble/cipher.
 	cipher noiseCipher.AEAD
 }
 

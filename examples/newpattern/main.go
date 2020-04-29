@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/yyforyongyu/noise/pattern"
+	"github.com/yyforyongyu/babble/pattern"
 )
 
 func main() {

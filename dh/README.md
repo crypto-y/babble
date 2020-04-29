@@ -22,7 +22,7 @@ The protocol name is `secp256k1`, e.g., Noise_XX_**secp256k1**\_AESGCM_SHA256.
 
 ### Customized DH function
 
-To create your own DH function, you'll need to implement the interfaces specified in [`dh.go`](https://github.com/yyforyongyu/noise/blob/master/dh/dh.go), which requires a  `PublicKey` interface, a `PrivateKey` interface and a `Curve` interface. And you need to register it using `Register(Name, Curve)`.
+To create your own DH function, you'll need to implement the interfaces specified in [`dh.go`](https://github.com/yyforyongyu/babble/blob/master/dh/dh.go), which requires a  `PublicKey` interface, a `PrivateKey` interface and a `Curve` interface. And you need to register it using `Register(Name, Curve)`.
 
 Here's an example, which implements a curve named `dumb`, which does nothing.
 
@@ -36,7 +36,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/yyforyongyu/noise/dh"
+	"github.com/yyforyongyu/babble/dh"
 )
 
 // DHLEN must be >= 32.

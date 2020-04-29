@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/yyforyongyu/noise/hash"
+	"github.com/yyforyongyu/babble/hash"
 )
 
 func TestSetUp(t *testing.T) {
