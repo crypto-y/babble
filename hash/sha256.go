@@ -19,11 +19,6 @@ func (s *hashSha256) New() hash.Hash {
 	return s.h
 }
 
-func (s *hashSha256) Hash(data []byte) []byte {
-	s.New().Write(data)
-	return s.h.Sum(nil)
-}
-
 // HashLen for sha256 should be 32.
 func (s *hashSha256) HashLen() int {
 	return s.New().Size()

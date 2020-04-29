@@ -19,11 +19,6 @@ func (s *hashSha512) New() hash.Hash {
 	return s.h
 }
 
-func (s *hashSha512) Hash(data []byte) []byte {
-	s.New().Write(data)
-	return s.h.Sum(nil)
-}
-
 // HashLen for sha512 should be 64.
 func (s *hashSha512) HashLen() int {
 	return s.New().Size()

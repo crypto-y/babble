@@ -63,6 +63,7 @@ func TestHash(t *testing.T) {
 		name := "test hash " + tt.name
 		t.Run(name, func(t *testing.T) {
 			h, err := hash.FromString(tt.name)
+			hf := h.New()
 			// no error
 			require.Nil(t, err, "no error should be returned")
 			// hash name
@@ -72,14 +73,17 @@ func TestHash(t *testing.T) {
 			// hash len
 			require.Equal(t, tt.hashLen, h.HashLen(), "hash len mismatch")
 			// hash output
-			hashDigest := hex.EncodeToString(h.Hash(message))
+			_, _ = hf.Write(message)
+			hashDigest := hex.EncodeToString(hf.Sum(nil))
 			require.Equal(t, tt.digest, hashDigest, "hash digest is wrong")
 
 			// test reset
-			hashDigest = hex.EncodeToString(h.Hash(message))
+			_, _ = hf.Write(message)
+			hashDigest = hex.EncodeToString(hf.Sum(nil))
 			require.NotEqual(t, tt.digest, hashDigest, "hash digest is wrong")
 			h.Reset()
-			hashDigest = hex.EncodeToString(h.Hash(message))
+			_, _ = hf.Write(message)
+			hashDigest = hex.EncodeToString(hf.Sum(nil))
 			require.Equal(t, tt.digest, hashDigest, "hash digest is wrong")
 		})
 	}

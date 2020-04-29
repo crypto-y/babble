@@ -20,11 +20,6 @@ func (s *hashBLAKE2b) New() hash.Hash {
 	return s.h
 }
 
-func (s *hashBLAKE2b) Hash(data []byte) []byte {
-	s.New().Write(data)
-	return s.h.Sum(nil)
-}
-
 // HashLen for BLAKE2b should be 64.
 func (s *hashBLAKE2b) HashLen() int {
 	return s.New().Size()

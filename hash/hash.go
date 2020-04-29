@@ -30,10 +30,6 @@ type Hash interface {
 	// New returns the hash function used.
 	New() hash.Hash
 
-	// Hash uses some arbitrary-length data with a collision-resistant
-	// cryptographic hash function and returns an output of HashLen bytes.
-	Hash([]byte) []byte
-
 	// HashLen returns a constant specifying the size in bytes of the hash
 	// output. Must be 32 or 64.
 	HashLen() int

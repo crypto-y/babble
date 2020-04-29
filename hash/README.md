@@ -45,11 +45,6 @@ func (s *hashSha3) New() hash.Hash {
 	return s.h
 }
 
-func (s *hashSha3) Hash(data []byte) []byte {
-	s.New().Write(data)
-	return s.h.Sum(nil)
-}
-
 func (s *hashSha3) HashLen() int {
 	return s.New().Size()
 }
