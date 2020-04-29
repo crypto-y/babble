@@ -13,16 +13,17 @@ type hashBLAKE2b struct {
 
 // BlockLen for BLAKE2b should be 128.
 func (s *hashBLAKE2b) BlockLen() int {
-	return s.New().BlockSize()
+	return s.h.BlockSize()
 }
 
 func (s *hashBLAKE2b) New() hash.Hash {
-	return s.h
+	blake2bHash, _ := blake2b.New512(nil)
+	return blake2bHash
 }
 
 // HashLen for BLAKE2b should be 64.
 func (s *hashBLAKE2b) HashLen() int {
-	return s.New().Size()
+	return s.h.Size()
 }
 
 func (s *hashBLAKE2b) String() string {
@@ -30,7 +31,7 @@ func (s *hashBLAKE2b) String() string {
 }
 
 func (s *hashBLAKE2b) Reset() {
-	s.New().Reset()
+	s.h.Reset()
 }
 
 func newBlake2b() Hash {
