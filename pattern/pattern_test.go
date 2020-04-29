@@ -60,6 +60,36 @@ func TestSetUp(t *testing.T) {
 	n, err = FromString("Npsk")
 	require.Nil(t, n, "should return nil")
 	require.NotNil(t, err, "should return an error")
+
+	// test padding psk tokens
+	// -> e
+	// <- e, ee
+	hp, err := FromString("NNpsk0+psk1+psk2")
+	expected := pattern{
+		patternLine{TokenInitiator, TokenPsk, TokenE, TokenPsk},
+		patternLine{TokenResponder, TokenE, TokenEe, TokenPsk},
+	}
+	require.NoError(t, err, "failed to get NN with psk")
+	require.Equal(t, expected, hp.MessagePattern, "pattern mismatched")
+
+	// fallback has no effect
+	hp, err = FromString("NNfallback")
+	expected = pattern{
+		patternLine{TokenInitiator, TokenE},
+		patternLine{TokenResponder, TokenE, TokenEe},
+	}
+	require.NoError(t, err, "failed to get NN with fallback")
+	require.Equal(t, expected, hp.MessagePattern, "pattern mismatched")
+
+	// NN should stay unchanged
+	hp, err = FromString("NN")
+	expected = pattern{
+		patternLine{TokenInitiator, TokenE},
+		patternLine{TokenResponder, TokenE, TokenEe},
+	}
+	require.NoError(t, err, "failed to get NN")
+	require.Equal(t, expected, hp.MessagePattern, "pattern mismatched")
+
 }
 
 func TestRegister(t *testing.T) {

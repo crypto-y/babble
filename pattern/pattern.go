@@ -91,17 +91,21 @@ func FromString(s string) (*HandshakePattern, error) {
 
 	// make a copy
 	newHp := &HandshakePattern{
-		Name:              hp.Name,
+		Name:              s,
 		Pattern:           hp.Pattern,
 		PreMessagePattern: hp.PreMessagePattern,
-		MessagePattern:    hp.MessagePattern,
 	}
+	newHp.MessagePattern = make(pattern, len(hp.MessagePattern))
+	copy(newHp.MessagePattern, hp.MessagePattern)
 
 	// mount the modifiers if specified, eg, psk and fallback
 	modifier := strings.Trim(s, name)
 	if err := newHp.mountModifiers(modifier); err != nil {
 		return nil, err
 	}
+
+	// pad the psk tokens
+	newHp.padPskToken()
 
 	// cache it for future reference
 	supportedPatterns[s] = newHp
@@ -246,6 +250,27 @@ func findAndRemove(s []int, n int) ([]int, bool) {
 		}
 	}
 	return nil, false
+}
+
+// padPskToken will pad the psk tokens if they are missing in the pattern but
+// specified in the modifiers.
+func (hp *HandshakePattern) padPskToken() {
+	if hp.Modifier == nil || !hp.Modifier.PskMode() {
+		return
+	}
+
+	// now we will pad all the psk tokens
+	for _, i := range hp.Modifier.PskIndexes {
+		if i == 0 {
+			hp.MessagePattern[0] = append(
+				hp.MessagePattern[0][:1], append(
+					patternLine{TokenPsk}, hp.MessagePattern[0][1:]...)...,
+			)
+		} else {
+			hp.MessagePattern[i-1] = append(hp.MessagePattern[i-1], TokenPsk)
+		}
+	}
+
 }
 
 // validatePsk checks the psk token is in the right position if enabled.
