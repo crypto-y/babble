@@ -71,6 +71,7 @@ func TestSetUp(t *testing.T) {
 	}
 	require.NoError(t, err, "failed to get NN with psk")
 	require.Equal(t, expected, hp.MessagePattern, "pattern mismatched")
+	require.Equal(t, "NNpsk0+psk1+psk2", hp.String(), "name mismatched")
 
 	// fallback has no effect
 	hp, err = FromString("NNfallback")
@@ -80,6 +81,7 @@ func TestSetUp(t *testing.T) {
 	}
 	require.NoError(t, err, "failed to get NN with fallback")
 	require.Equal(t, expected, hp.MessagePattern, "pattern mismatched")
+	require.Equal(t, "NNfallback", hp.String(), "name mismatched")
 
 	// NN should stay unchanged
 	hp, err = FromString("NN")
@@ -89,6 +91,7 @@ func TestSetUp(t *testing.T) {
 	}
 	require.NoError(t, err, "failed to get NN")
 	require.Equal(t, expected, hp.MessagePattern, "pattern mismatched")
+	require.Equal(t, "NN", hp.String(), "name mismatched")
 
 }
 
