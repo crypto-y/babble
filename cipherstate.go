@@ -1,9 +1,8 @@
 package babble
 
 import (
-	"reflect"
-
 	"errors"
+	"reflect"
 
 	noiseCipher "github.com/yyforyongyu/babble/cipher"
 	"github.com/yyforyongyu/babble/rekey"
@@ -99,7 +98,11 @@ func (cs *CipherState) hasKey() bool {
 // initializeKey sets the cipher key and nonce.
 func (cs *CipherState) initializeKey(k [CipherKeySize]byte) error {
 	// clean cipher state first
-	cs.reset()
+	cs.Reset()
+
+	if k == ZEROS {
+		return nil
+	}
 
 	copy(cs.key[:], k[:])
 	if err := cs.cipher.InitCipher(cs.key); err != nil {
@@ -145,11 +148,13 @@ func (cs *CipherState) Rekey() error {
 	return nil
 }
 
-// reset sets the cipher key to ZEROS, nonce to 0, and calls cipher.reset.
-func (cs *CipherState) reset() {
+// Reset sets the cipher key to ZEROS, nonce to 0, and calls cipher.Reset.
+func (cs *CipherState) Reset() {
 	cs.key = ZEROS
 	cs.nonce = 0
-	cs.cipher.Reset()
+	if cs.cipher != nil {
+		cs.cipher.Reset()
+	}
 }
 
 // SetNonce sets the nonce. This function is used for handling out-of-order

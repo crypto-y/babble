@@ -2,9 +2,10 @@ package babble
 
 import (
 	// noiseCipher "github.com/yyforyongyu/babble/cipher"
-	"crypto/sha256"
+
 	"errors"
 
+	noiseCipher "github.com/yyforyongyu/babble/cipher"
 	"github.com/yyforyongyu/babble/dh"
 	"github.com/yyforyongyu/babble/hash"
 	"golang.org/x/crypto/hkdf"
@@ -97,7 +98,7 @@ func (s *symmetricState) HKDF(secret []byte, num int) ([][]byte, error) {
 	// A concept remapping
 	//  - salt is the chaining key
 	//  - info is an empty byte slice([]byte)
-	h := hkdf.New(sha256.New, secret, s.chainingKey, ZEROLEN)
+	h := hkdf.New(s.hash.New, secret, s.chainingKey, ZEROLEN)
 
 	// read [num] outputs
 	var result [][]byte
@@ -134,7 +135,9 @@ func (s *symmetricState) InitializeSymmetric(protocolName []byte) {
 		s.digest = make([]byte, s.hash.HashLen())
 		copy(s.digest, protocolName)
 	} else {
-		s.digest = s.hash.Hash(protocolName)
+		h := s.hash.New()
+		h.Write(protocolName)
+		s.digest = h.Sum(nil)
 	}
 
 	s.chainingKey = make([]byte, s.hash.HashLen())
@@ -144,8 +147,14 @@ func (s *symmetricState) InitializeSymmetric(protocolName []byte) {
 
 // MixHash sets h = HASH(h || data) and writes it to digest.
 func (s *symmetricState) MixHash(data []byte) {
-	input := append(s.digest, data...)
-	s.digest = s.hash.Hash(input)
+
+	h := s.hash.New()
+
+	_, _ = h.Write(s.digest)
+	_, _ = h.Write(data)
+	s.digest = h.Sum(nil)
+
+	h.Reset()
 }
 
 // MixKey executes the following steps:
@@ -189,7 +198,6 @@ func (s *symmetricState) MixKeyAndHash(keyMaterial []byte) error {
 	// because tempKey is fixed size 32-byte array, it will automatically
 	// truncate if HASHLEN is 64.
 	copy(tempKey[:], digests[2])
-
 	s.MixHash(tempHashOutput)
 	s.cs.initializeKey(tempKey)
 
@@ -200,13 +208,16 @@ func (s *symmetricState) MixKeyAndHash(keyMaterial []byte) error {
 // calling Reset on related cipher state, curve and hash.
 func (s *symmetricState) Reset() {
 	s.chainingKey = nil
-	if s.cs != nil {
-		s.cs.reset()
-	}
-	s.cs = nil
 	s.digest = nil
-	s.hash = nil
-	s.curve = nil
+
+	if s.cs != nil {
+		s.cs.Reset()
+		s.cs = nil
+	}
+
+	if s.hash != nil {
+		s.hash.Reset()
+	}
 }
 
 // Split returns a pair of CipherState structs for encrypting transport
@@ -227,8 +238,12 @@ func (s *symmetricState) Split() (c1, c2 *CipherState, err error) {
 	copy(tempKey1[:], digests[0])
 	copy(tempKey2[:], digests[1])
 
-	c1 = newCipherState(s.cs.cipher, s.cs.RekeyManger)
-	c2 = newCipherState(s.cs.cipher, s.cs.RekeyManger)
+	cipher1, _ := noiseCipher.FromString(s.cs.cipher.String())
+	cipher2, _ := noiseCipher.FromString(s.cs.cipher.String())
+
+	c1 = newCipherState(cipher1, s.cs.RekeyManger)
+	c2 = newCipherState(cipher2, s.cs.RekeyManger)
+
 	c1.initializeKey(tempKey1)
 	c2.initializeKey(tempKey2)
 

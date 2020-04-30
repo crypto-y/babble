@@ -4,11 +4,31 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/yyforyongyu/babble/cipher"
 	noiseCipher "github.com/yyforyongyu/babble/cipher"
 	"github.com/yyforyongyu/babble/rekey"
 )
 
 func TestCipherStateNoRekeyManager(t *testing.T) {
+	var (
+		cipherA, _ = noiseCipher.FromString("AESGCM")
+		cipherB, _ = noiseCipher.FromString("AESGCM")
+
+		key = [CipherKeySize]byte{
+			0xa8, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0x6b,
+		}
+
+		ad = []byte{
+			0xa8, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+		}
+		message  = []byte("Noise Protocol Framework")
+		maxNonce = cipher.MaxNonce
+	)
+
 	alice := newCipherState(cipherA, nil)
 	bob := newCipherState(cipherB, nil)
 
@@ -51,7 +71,7 @@ func TestCipherStateNoRekeyManager(t *testing.T) {
 	require.NotEqual(t, key, alice.key, "rekey changes the cipher key")
 
 	// test reset
-	alice.reset()
+	alice.Reset()
 	require.Equal(t, uint64(0), alice.Nonce(), "reset sets nonce to be 0")
 	require.Equal(t, ZEROS, alice.key, "reset sets key to be zeros")
 
@@ -86,6 +106,24 @@ func TestCipherStateNoRekeyManager(t *testing.T) {
 }
 
 func TestCipherStateDefaultRekeyManager(t *testing.T) {
+	var (
+		cipherA, _ = noiseCipher.FromString("AESGCM")
+		cipherB, _ = noiseCipher.FromString("AESGCM")
+
+		key = [CipherKeySize]byte{
+			0xa8, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0x6b,
+		}
+
+		ad = []byte{
+			0xa8, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+		}
+		message = []byte("Noise Protocol Framework")
+	)
+
 	interval := uint64(3)
 
 	rekeyerA := rekey.NewDefault(interval, cipherA, true)

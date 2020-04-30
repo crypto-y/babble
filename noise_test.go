@@ -10,6 +10,15 @@ import (
 )
 
 func TestNewProtocolWithConfig(t *testing.T) {
+	var (
+		key = [CipherKeySize]byte{
+			0xa8, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0x6b,
+		}
+	)
+
 	name := "Noise_XN_25519_AESGCM_SHA256"
 	c, _ := noiseCipher.FromString("AESGCM")
 	testInterval := uint64(100)
@@ -83,7 +92,7 @@ func TestNewProtocolWithConfig(t *testing.T) {
 			RemoteEphemeralPub: key[:],
 			RemoteStaticPub:    key[:],
 			Rekeyer:            rk,
-		}, errKeyNotEmpty("local ephemeral key"), testInterval, testResetNonce},
+		}, nil, testInterval, testResetNonce},
 	}
 
 	for _, tt := range testParams {
@@ -167,12 +176,6 @@ func TestParseProtocolName(t *testing.T) {
 			&testConfig{"XX", "25519", "AESGCM", "SHA256"},
 		},
 		{
-			"parse a protocol name with pattern modifiers",
-			"Noise_XXfallback+psk0_25519_AESGCM_SHA256",
-			nil,
-			&testConfig{"XX", "25519", "AESGCM", "SHA256"},
-		},
-		{
 			"parse name with wrong prefix",
 			"YYois_XX_25519_AESGCM_SHA256",
 			ErrProtocolInvalidName,
@@ -233,4 +236,9 @@ func TestParseProtocolName(t *testing.T) {
 		})
 	}
 
+	// parse a protocol name with pattern modifiers
+	name := "Noise_XXfallback+psk0_25519_AESGCM_SHA256"
+	c, err := parseProtocolName(name)
+	require.NoError(t, err, "should have no error")
+	require.Equal(t, "XXfallback+psk0", c.pattern.String(), "pattern not match")
 }

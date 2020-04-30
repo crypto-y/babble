@@ -37,11 +37,11 @@ func testVector(t *testing.T, v *vectors.Vector) {
 
 	alice, err := NewProtocolWithConfig(aliceCfg)
 	require.NoError(err, "failed to create alice's handshake state")
-	defer alice.reset()
+	defer alice.Reset()
 
 	bob, err := NewProtocolWithConfig(bobCfg)
 	require.NoError(err, "failed to create bob's handshake state")
-	defer bob.reset()
+	defer bob.Reset()
 
 	testMessages(t, alice, bob, v)
 }
@@ -80,6 +80,12 @@ func testMessages(t *testing.T, alice, bob *HandshakeState,
 	require.True(alice.Finished(), "must be finished at the end")
 	require.True(bob.Finished(), "must be finished at the end")
 
+	// test getinfo
+	_, err := alice.GetInfo()
+	require.NoError(err, "alice failed to getinfo")
+	_, err = bob.GetInfo()
+	require.NoError(err, "bob failed to getinfo")
+
 	if v.HandshakeHash != nil {
 		require.EqualValues([]byte(v.HandshakeHash), alice.GetDigest(),
 			"alice handshake digest not match")
@@ -102,8 +108,8 @@ func testMessages(t *testing.T, alice, bob *HandshakeState,
 				rc = alice.SendCipherState
 			}
 		}
-		defer sc.reset()
-		defer rc.reset()
+		defer sc.Reset()
+		defer rc.Reset()
 
 		require.Equal(sc.key, rc.key, "send and recv keys should match")
 

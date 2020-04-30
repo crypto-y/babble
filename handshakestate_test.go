@@ -13,30 +13,26 @@ import (
 	"github.com/yyforyongyu/babble/pattern"
 )
 
-var (
-	cipherG, _ = noiseCipher.FromString("ChaChaPoly")
-	hashG, _   = noiseHash.FromString("BLAKE2s")
-	curveG, _  = noiseCurve.FromString("secp256k1")
-
-	cs = newCipherState(cipherG, nil)
-	ss = newSymmetricState(cs, hashG, curveG)
-
-	e, _       = curveG.GenerateKeyPair(nil)
-	s, _       = curveG.GenerateKeyPair(nil)
-	remoteE, _ = curveG.GenerateKeyPair(nil)
-	remoteS, _ = curveG.GenerateKeyPair(nil)
-	re         = remoteE.PubKey()
-	rs         = remoteS.PubKey()
-
-	// create a different type of key based on a different curve
-	wrongRemoteE, _ = curveA.GenerateKeyPair(nil)
-	wrongRe         = wrongRemoteE.PubKey()
-
-	XN, _     = pattern.FromString("XN")     // 3 lines of pattern
-	XNpsk0, _ = pattern.FromString("XNpsk0") // 3 lines of pattern
-)
-
 func TestInitializeHandshakeState(t *testing.T) {
+	var (
+		cipherG, _ = noiseCipher.FromString("ChaChaPoly")
+		hashG, _   = noiseHash.FromString("BLAKE2s")
+		curveG, _  = noiseCurve.FromString("secp256k1")
+
+		protocolName = []byte("TestNoise")
+		prologue     = []byte("YY")
+		psk          = []byte{
+			0xa8, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0x6b,
+		}
+		pskToken = [][]byte{psk}
+
+		csG = newCipherState(cipherG, nil)
+		ssG = newSymmetricState(csG, hashG, curveG)
+	)
+
 	var longProtocolName = [1000]byte{}
 	var wrongPsk = [][]byte{{1, 2, 3}}
 
@@ -56,7 +52,7 @@ func TestInitializeHandshakeState(t *testing.T) {
 
 	// test nil handshake pattern
 	hs, err = newHandshakeState(protocolName, prologue, nil,
-		true, ss, nil, nil, nil, nil, nil, false)
+		true, ssG, nil, nil, nil, nil, nil, false)
 	require.Nil(t, hs, "no handshake state created")
 	require.Equal(t, errMissingHandshakePattern, err,
 		"missing handshake pattern error should be returned")
@@ -65,33 +61,58 @@ func TestInitializeHandshakeState(t *testing.T) {
 	// key required in the KN handshake pattern.
 	KN, _ := pattern.FromString("KN")
 	hs, err = newHandshakeState(protocolName, prologue, nil,
-		true, ss, KN, nil, nil, nil, nil, false)
+		true, ssG, KN, nil, nil, nil, nil, false)
 	require.Nil(t, hs, "no handshake state created")
 	require.NotNil(t, err, "an error should be returned from initialize")
 
 	// test missing psk token
 	NXpsk0, _ := pattern.FromString("NXpsk0")
 	hs, err = newHandshakeState(protocolName, prologue, nil,
-		true, ss, NXpsk0, nil, nil, nil, nil, false)
+		true, ssG, NXpsk0, nil, nil, nil, nil, false)
 	require.Nil(t, hs, "no handshake state created")
 	require.Equal(t, errMismatchedPsks(1, 0), err,
 		"invalid psk size error should be returned")
 
 	// test wrong psk size
 	hs, err = newHandshakeState(protocolName, prologue, wrongPsk,
-		true, ss, NXpsk0, nil, nil, nil, nil, false)
+		true, ssG, NXpsk0, nil, nil, nil, nil, false)
 	require.Nil(t, hs, "no handshake state created")
 	require.Equal(t, errInvalidPskSize, err,
 		"invalid psk size error should be returned")
 
 	// test successfully created a handshake state
 	hs, err = newHandshakeState(protocolName, prologue, pskToken,
-		true, ss, NXpsk0, nil, nil, nil, nil, false)
+		true, ssG, NXpsk0, nil, nil, nil, nil, false)
 	require.Nil(t, err, "should return no error")
 	require.NotNil(t, hs, "should return an hs instance")
+	ck := hs.GetChainingKey()
+	require.NotNil(t, ck, "ck is not nil")
+	h := hs.GetDigest()
+	require.NotNil(t, h, "digest is not nil")
 }
 
 func TestValidateKeys(t *testing.T) {
+	var (
+		cipherG, _ = noiseCipher.FromString("ChaChaPoly")
+		hashG, _   = noiseHash.FromString("BLAKE2s")
+		curveG, _  = noiseCurve.FromString("secp256k1")
+
+		protocolName = []byte("TestNoise")
+		prologue     = []byte("YY")
+		psk          = []byte{
+			0xa8, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0x6b,
+		}
+		pskToken = [][]byte{psk}
+
+		csG        = newCipherState(cipherG, nil)
+		ssG        = newSymmetricState(csG, hashG, curveG)
+		remoteS, _ = curveG.GenerateKeyPair(nil)
+		rs         = remoteS.PubKey()
+	)
+
 	testParams := []struct {
 		name        string
 		pattern     string
@@ -102,14 +123,14 @@ func TestValidateKeys(t *testing.T) {
 		rs          dh.PublicKey
 		errExpected error
 	}{
-		{"test e not empty", "N", true, e, s, re, rs,
-			errKeyNotEmpty("local ephemeral key")},
-		{"test re not empty", "NX", false, e, s, re, rs,
-			errKeyNotEmpty("remote ephemeral key")},
+		// {"test e not empty", "N", true, e, s, re, rs,
+		// 	errKeyNotEmpty("local ephemeral key")},
+		// {"test re not empty", "NX", false, e, s, re, rs,
+		// 	errKeyNotEmpty("remote ephemeral key")},
 		{"test missing s", "XN", true, nil, nil, nil, rs,
 			errMissingKey("local static key")},
-		{"test rs not empty", "XN", false, nil, s, nil, rs,
-			errKeyNotEmpty("remote static key")},
+		// {"test rs not empty", "XN", false, nil, s, nil, rs,
+		// 	errKeyNotEmpty("remote static key")},
 	}
 
 	for _, tt := range testParams {
@@ -118,7 +139,7 @@ func TestValidateKeys(t *testing.T) {
 			require.Nil(t, err, "error loading pattern")
 
 			hs, err := newHandshakeState(protocolName, prologue, pskToken,
-				tt.initiator, ss, p, tt.s, tt.e, tt.rs, tt.re, false)
+				tt.initiator, ssG, p, tt.s, tt.e, tt.rs, tt.re, false)
 			require.Equal(t, tt.errExpected, err, "returned error not match")
 			require.Nil(t, hs, "hs should be nil")
 		})
@@ -127,6 +148,32 @@ func TestValidateKeys(t *testing.T) {
 }
 
 func TestProcessPreMessage(t *testing.T) {
+	var (
+		cipherG, _ = noiseCipher.FromString("ChaChaPoly")
+		hashG, _   = noiseHash.FromString("BLAKE2s")
+		curveG, _  = noiseCurve.FromString("secp256k1")
+
+		protocolName = []byte("TestNoise")
+		prologue     = []byte("YY")
+		psk          = []byte{
+			0xa8, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0x6b,
+		}
+		pskToken = [][]byte{psk}
+
+		csG = newCipherState(cipherG, nil)
+		ssG = newSymmetricState(csG, hashG, curveG)
+
+		e, _       = curveG.GenerateKeyPair(nil)
+		s, _       = curveG.GenerateKeyPair(nil)
+		remoteE, _ = curveG.GenerateKeyPair(nil)
+		remoteS, _ = curveG.GenerateKeyPair(nil)
+		re         = remoteE.PubKey()
+		rs         = remoteS.PubKey()
+	)
+
 	// create a test pattern
 	err := pattern.Register("YY", `
 	-> e, s
@@ -163,7 +210,7 @@ func TestProcessPreMessage(t *testing.T) {
 	for _, tt := range testParams {
 		t.Run(tt.name, func(t *testing.T) {
 			hs, err := newHandshakeState(protocolName, prologue, pskToken,
-				tt.initiator, ss, YY, tt.s, tt.e, tt.rs, tt.re, false)
+				tt.initiator, ssG, YY, tt.s, tt.e, tt.rs, tt.re, false)
 			if tt.errExpected != nil {
 				require.Nil(t, hs, "handshake state should not be created")
 			} else {
@@ -176,8 +223,20 @@ func TestProcessPreMessage(t *testing.T) {
 }
 
 func TestincrementPatternIndexAndSplit(t *testing.T) {
+	var (
+		cipherG, _ = noiseCipher.FromString("ChaChaPoly")
+		hashG, _   = noiseHash.FromString("BLAKE2s")
+		curveG, _  = noiseCurve.FromString("secp256k1")
+
+		protocolName = []byte("TestNoise")
+		prologue     = []byte("YY")
+		csG          = newCipherState(cipherG, nil)
+		ssG          = newSymmetricState(csG, hashG, curveG)
+		XN, _        = pattern.FromString("XN") // 3 lines of pattern
+	)
+
 	hs, err := newHandshakeState(protocolName, prologue, nil,
-		true, ss, XN, nil, nil, nil, nil, false)
+		true, ssG, XN, nil, nil, nil, nil, false)
 	require.Nil(t, err, "failed to create handshake state")
 	require.Equal(t, 0, hs.patternIndex, "pattern index is not 0")
 	require.Nil(t, hs.SendCipherState, "no send cipher inited")
@@ -204,7 +263,7 @@ func TestincrementPatternIndexAndSplit(t *testing.T) {
 
 	// make an invalid chain key error
 	hs, _ = newHandshakeState(protocolName, prologue, nil,
-		true, ss, XN, nil, nil, nil, nil, false)
+		true, ssG, XN, nil, nil, nil, nil, false)
 	hs.ss.chainingKey = nil
 	// increase twice to trigger the error
 	hs.incrementPatternIndexAndSplit()
@@ -217,9 +276,49 @@ func TestincrementPatternIndexAndSplit(t *testing.T) {
 }
 
 func TestProcessReadTokenE(t *testing.T) {
+	var (
+		cipherG, _ = noiseCipher.FromString("ChaChaPoly")
+		hashG, _   = noiseHash.FromString("BLAKE2s")
+		curveG, _  = noiseCurve.FromString("secp256k1")
+
+		key = [CipherKeySize]byte{
+			0xa8, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0x6b,
+		}
+		pubBitcoin = [33]byte{
+			0x2, 0xf8, 0xb4, 0x31, 0x66, 0x45, 0x7e, 0x42,
+			0x67, 0xac, 0x22, 0x54, 0x1b, 0x5a, 0xb6, 0x17,
+			0x95, 0x64, 0x33, 0xaa, 0x9a, 0x8b, 0x26, 0x4a,
+			0xbb, 0x28, 0xdc, 0x99, 0x49, 0xfa, 0x97, 0x8,
+			0xe0,
+		}
+		protocolName = []byte("TestNoise")
+		prologue     = []byte("YY")
+		psk          = []byte{
+			0xa8, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0x6b,
+		}
+		pskToken = [][]byte{psk}
+
+		csG = newCipherState(cipherG, nil)
+		ssG = newSymmetricState(csG, hashG, curveG)
+
+		s, _       = curveG.GenerateKeyPair(nil)
+		remoteE, _ = curveG.GenerateKeyPair(nil)
+		remoteS, _ = curveG.GenerateKeyPair(nil)
+		re         = remoteE.PubKey()
+		rs         = remoteS.PubKey()
+
+		XNpsk0, _ = pattern.FromString("XNpsk0") // 3 lines of pattern
+	)
+
 	// test when re is not empty
 	hs, err := newHandshakeState(protocolName, prologue, pskToken,
-		true, ss, XNpsk0, s, nil, rs, nil, false)
+		true, ssG, XNpsk0, s, nil, rs, nil, false)
 	require.Nil(t, err, "failed to create handshake state")
 	hs.remoteEphemeralPub = re
 	p, err := hs.readTokenE(nil)
@@ -229,7 +328,7 @@ func TestProcessReadTokenE(t *testing.T) {
 
 	// test invalid payload
 	hs, err = newHandshakeState(protocolName, prologue, pskToken,
-		true, ss, XNpsk0, s, nil, rs, nil, false)
+		true, ssG, XNpsk0, s, nil, rs, nil, false)
 	p, err = hs.readTokenE(nil)
 	require.Nil(t, p, "no payload should be returned")
 	require.Equal(t, errInvalidPayload, err, "should return errInvalidPayload")
@@ -250,20 +349,47 @@ func TestProcessReadTokenE(t *testing.T) {
 }
 
 func TestProcessReadTokenS(t *testing.T) {
-	// test when rs is not empty
-	hs, err := newHandshakeState(protocolName, prologue, pskToken,
-		true, ss, XNpsk0, s, nil, nil, nil, false)
-	require.Nil(t, err, "failed to create handshake state")
-	hs.remoteStaticPub = rs
-	p, err := hs.readTokenS(nil)
-	require.Nil(t, p, "no payload should be returned")
-	require.Equal(t, errKeyNotEmpty("remote static key"), err,
-		"should return key not empty error")
+	var (
+		cipherG, _ = noiseCipher.FromString("ChaChaPoly")
+		hashG, _   = noiseHash.FromString("BLAKE2s")
+		curveG, _  = noiseCurve.FromString("secp256k1")
+
+		key = [CipherKeySize]byte{
+			0xa8, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0x6b,
+		}
+		pubBitcoin = [33]byte{
+			0x2, 0xf8, 0xb4, 0x31, 0x66, 0x45, 0x7e, 0x42,
+			0x67, 0xac, 0x22, 0x54, 0x1b, 0x5a, 0xb6, 0x17,
+			0x95, 0x64, 0x33, 0xaa, 0x9a, 0x8b, 0x26, 0x4a,
+			0xbb, 0x28, 0xdc, 0x99, 0x49, 0xfa, 0x97, 0x8,
+			0xe0,
+		}
+
+		protocolName = []byte("TestNoise")
+		prologue     = []byte("YY")
+		psk          = []byte{
+			0xa8, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0x6b,
+		}
+		pskToken = [][]byte{psk}
+
+		csG       = newCipherState(cipherG, nil)
+		ssG       = newSymmetricState(csG, hashG, curveG)
+		s, _      = curveG.GenerateKeyPair(nil)
+		XN, _     = pattern.FromString("XN")     // 3 lines of pattern
+		XNpsk0, _ = pattern.FromString("XNpsk0") // 3 lines of pattern
+	)
 
 	// test invalid payload
-	hs, err = newHandshakeState(protocolName, prologue, pskToken,
-		true, ss, XNpsk0, s, nil, nil, nil, false)
-	p, err = hs.readTokenS(nil)
+	hs, err := newHandshakeState(protocolName, prologue, pskToken,
+		true, ssG, XNpsk0, s, nil, nil, nil, false)
+	// hs.ss.InitializeSymmetric(protocolName)
+	p, err := hs.readTokenS(nil)
 	require.Nil(t, p, "no payload should be returned")
 	require.Equal(t, errInvalidPayload, err, "should return errInvalidPayload")
 
@@ -282,20 +408,43 @@ func TestProcessReadTokenS(t *testing.T) {
 
 	// test failed to decrypt
 	hs, err = newHandshakeState(protocolName, prologue, pskToken,
-		true, ss, XN, s, nil, nil, nil, false)
-	hs.ss.cs.key = key
+		true, ssG, XN, s, nil, nil, nil, false)
+	err = hs.ss.cs.initializeKey(key)
+	require.NoError(t, err, "failed to initilize key")
 	payload = append(key[:], pubBitcoin[:]...)
 	p, err = hs.readTokenS(payload)
-	require.Equal(t, "chacha20poly1305: message authentication failed",
-		err.Error(), "should return an error")
+	require.EqualError(t, err,
+		"chacha20poly1305: message authentication failed",
+		"should return an error")
 	require.Nil(t, p, "no payload should be returned")
 
 }
 
 func TestProcessTokenPsk(t *testing.T) {
+	var (
+		cipherG, _ = noiseCipher.FromString("ChaChaPoly")
+		hashG, _   = noiseHash.FromString("BLAKE2s")
+		curveG, _  = noiseCurve.FromString("secp256k1")
+
+		protocolName = []byte("TestNoise")
+		prologue     = []byte("YY")
+		psk          = []byte{
+			0xa8, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0x6b,
+		}
+		pskToken = [][]byte{psk}
+
+		csG       = newCipherState(cipherG, nil)
+		ssG       = newSymmetricState(csG, hashG, curveG)
+		s, _      = curveG.GenerateKeyPair(nil)
+		XNpsk0, _ = pattern.FromString("XNpsk0") // 3 lines of pattern
+	)
+
 	// test success
 	hs, err := newHandshakeState(protocolName, prologue, pskToken,
-		true, ss, XNpsk0, s, nil, nil, nil, false)
+		true, ssG, XNpsk0, s, nil, nil, nil, false)
 	require.Nil(t, err, "failed to create handshake state")
 	err = hs.processTokenPsk()
 	require.Nil(t, err, "should return no error")
@@ -313,6 +462,39 @@ func TestProcessTokenPsk(t *testing.T) {
 }
 
 func TestProcessTokenDH(t *testing.T) {
+	var (
+		cipherG, _ = noiseCipher.FromString("ChaChaPoly")
+		hashG, _   = noiseHash.FromString("BLAKE2s")
+		curveG, _  = noiseCurve.FromString("secp256k1")
+		curveA, _  = noiseCurve.FromString("25519")
+
+		protocolName = []byte("TestNoise")
+		prologue     = []byte("YY")
+		psk          = []byte{
+			0xa8, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0x6b,
+		}
+		pskToken = [][]byte{psk}
+
+		csG = newCipherState(cipherG, nil)
+		ssG = newSymmetricState(csG, hashG, curveG)
+
+		e, _       = curveG.GenerateKeyPair(nil)
+		s, _       = curveG.GenerateKeyPair(nil)
+		remoteE, _ = curveG.GenerateKeyPair(nil)
+		remoteS, _ = curveG.GenerateKeyPair(nil)
+		re         = remoteE.PubKey()
+		rs         = remoteS.PubKey()
+
+		// create a different type of key based on a different curve
+		wrongRemoteE, _ = curveA.GenerateKeyPair(nil)
+		wrongRe         = wrongRemoteE.PubKey()
+
+		XN, _ = pattern.FromString("XN") // 3 lines of pattern
+	)
+
 	testParams := []struct {
 		name        string
 		token       pattern.Token
@@ -357,7 +539,7 @@ func TestProcessTokenDH(t *testing.T) {
 
 			// test setup
 			hs, err := newHandshakeState(protocolName, prologue, pskToken,
-				tt.initiator, ss, XN, s, nil, nil, nil, false)
+				tt.initiator, ssG, XN, s, nil, nil, nil, false)
 			require.Nil(t, err, "failed to create handshake state")
 
 			oldCk := hs.ss.chainingKey
@@ -387,6 +569,33 @@ func TestProcessTokenDH(t *testing.T) {
 }
 
 func TestProcessReadToken(t *testing.T) {
+	var (
+		cipherG, _ = noiseCipher.FromString("ChaChaPoly")
+		hashG, _   = noiseHash.FromString("BLAKE2s")
+		curveG, _  = noiseCurve.FromString("secp256k1")
+
+		protocolName = []byte("TestNoise")
+		prologue     = []byte("YY")
+		psk          = []byte{
+			0xa8, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0x6b,
+		}
+		pskToken = [][]byte{psk}
+
+		csG = newCipherState(cipherG, nil)
+		ssG = newSymmetricState(csG, hashG, curveG)
+
+		s, _       = curveG.GenerateKeyPair(nil)
+		remoteE, _ = curveG.GenerateKeyPair(nil)
+		remoteS, _ = curveG.GenerateKeyPair(nil)
+		re         = remoteE.PubKey()
+		rs         = remoteS.PubKey()
+
+		XN, _ = pattern.FromString("XN") // 3 lines of pattern
+	)
+
 	testParams := []struct {
 		name            string
 		token           pattern.Token
@@ -398,12 +607,12 @@ func TestProcessReadToken(t *testing.T) {
 	}{
 		{"successfully process e", pattern.TokenE, re.Bytes(), nil, nil,
 			nil, []byte{}},
-		{"error process e", pattern.TokenE, re.Bytes(), re, nil,
-			errKeyNotEmpty("remote ephemeral key"), nil},
+		// {"error process e", pattern.TokenE, re.Bytes(), re, nil,
+		// 	errKeyNotEmpty("remote ephemeral key"), nil},
 		{"successfully process s", pattern.TokenS, rs.Bytes(), nil, nil,
 			nil, []byte{}},
-		{"error process s", pattern.TokenS, rs.Bytes(), nil, rs,
-			errKeyNotEmpty("remote static key"), nil},
+		// {"error process s", pattern.TokenS, rs.Bytes(), nil, rs,
+		// 	errKeyNotEmpty("remote static key"), nil},
 		{"successfully process psk", pattern.TokenPsk, rs.Bytes(), nil, nil,
 			nil, rs.Bytes()},
 		{"successfully process dh", pattern.TokenSs, rs.Bytes(), nil, rs,
@@ -416,7 +625,7 @@ func TestProcessReadToken(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// test setup
 			hs, err := newHandshakeState(protocolName, prologue, pskToken,
-				true, ss, XN, s, nil, tt.rs, nil, false)
+				true, ssG, XN, s, nil, tt.rs, nil, false)
 			require.Nil(t, err, "failed to create handshake state")
 
 			hs.remoteEphemeralPub = tt.re
@@ -429,7 +638,7 @@ func TestProcessReadToken(t *testing.T) {
 
 	// test an edge case for psk
 	hs, err := newHandshakeState(protocolName, prologue, pskToken,
-		true, ss, XN, s, nil, rs, nil, false)
+		true, ssG, XN, s, nil, rs, nil, false)
 	require.Nil(t, err, "failed to create handshake state")
 	hs.pskIndex = 1
 	payload, err := hs.processReadToken(pattern.TokenPsk, nil)
@@ -438,29 +647,47 @@ func TestProcessReadToken(t *testing.T) {
 }
 
 func TestProcessWriteTokenE(t *testing.T) {
+	var (
+		cipherG, _ = noiseCipher.FromString("ChaChaPoly")
+		hashG, _   = noiseHash.FromString("BLAKE2s")
+		curveG, _  = noiseCurve.FromString("secp256k1")
+
+		protocolName = []byte("TestNoise")
+		prologue     = []byte("YY")
+		psk          = []byte{
+			0xa8, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0x6b,
+		}
+		pubBitcoin = [33]byte{
+			0x2, 0xf8, 0xb4, 0x31, 0x66, 0x45, 0x7e, 0x42,
+			0x67, 0xac, 0x22, 0x54, 0x1b, 0x5a, 0xb6, 0x17,
+			0x95, 0x64, 0x33, 0xaa, 0x9a, 0x8b, 0x26, 0x4a,
+			0xbb, 0x28, 0xdc, 0x99, 0x49, 0xfa, 0x97, 0x8,
+			0xe0,
+		}
+		pskToken = [][]byte{psk}
+
+		csG = newCipherState(cipherG, nil)
+		ssG = newSymmetricState(csG, hashG, curveG)
+
+		s, _       = curveG.GenerateKeyPair(nil)
+		remoteS, _ = curveG.GenerateKeyPair(nil)
+		rs         = remoteS.PubKey()
+
+		XNpsk0, _ = pattern.FromString("XNpsk0") // 3 lines of pattern
+	)
+
 	payload := []byte{}
 
-	// test when e is not empty
+	// test success
 	hs, err := newHandshakeState(protocolName, prologue, pskToken,
-		true, ss, XNpsk0, s, nil, rs, nil, false)
+		true, ssG, XNpsk0, s, nil, rs, nil, false)
 	require.Nil(t, err, "failed to create handshake state")
 
 	oldDigest := hs.ss.digest
-	hs.localEphemeral = e
 	p, err := hs.writeTokenE(payload)
-	require.Equal(t, errKeyNotEmpty("local ephemeral key"), err,
-		"should return key not empty error")
-	require.Nil(t, p, "returned payload should be empty")
-	require.Equal(t, []byte{}, payload, "payload should not be changed")
-	require.Equal(t, oldDigest, hs.ss.digest, "digest should not change")
-
-	// test success
-	hs, err = newHandshakeState(protocolName, prologue, pskToken,
-		true, ss, XNpsk0, s, nil, rs, nil, false)
-	require.Nil(t, err, "failed to create handshake state")
-
-	oldDigest = hs.ss.digest
-	p, err = hs.writeTokenE(payload)
 	require.Nil(t, err, "should have no error")
 	require.Equal(t, len(pubBitcoin), len(p), "payload should be 33-byte")
 	require.NotEqual(t, oldDigest, hs.ss.digest, "digest should change")
@@ -468,9 +695,39 @@ func TestProcessWriteTokenE(t *testing.T) {
 }
 
 func TestProcessWriteTokenS(t *testing.T) {
+	var (
+		cipherG, _ = noiseCipher.FromString("ChaChaPoly")
+		hashG, _   = noiseHash.FromString("BLAKE2s")
+		curveG, _  = noiseCurve.FromString("secp256k1")
+
+		protocolName = []byte("TestNoise")
+		prologue     = []byte("YY")
+		psk          = []byte{
+			0xa8, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0x6b,
+		}
+		key = [CipherKeySize]byte{
+			0xa8, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0x6b,
+		}
+
+		pskToken = [][]byte{psk}
+		maxNonce = cipher.MaxNonce
+
+		csG  = newCipherState(cipherG, nil)
+		ssG  = newSymmetricState(csG, hashG, curveG)
+		s, _ = curveG.GenerateKeyPair(nil)
+
+		XNpsk0, _ = pattern.FromString("XNpsk0") // 3 lines of pattern
+	)
+
 	payload := []byte{}
 	hs, err := newHandshakeState(protocolName, prologue, pskToken,
-		true, ss, XNpsk0, s, nil, nil, nil, false)
+		true, ssG, XNpsk0, s, nil, nil, nil, false)
 	require.Nil(t, err, "failed to create handshake state")
 
 	// test missing key
@@ -500,23 +757,57 @@ func TestProcessWriteTokenS(t *testing.T) {
 }
 
 func TestProcessWriteToken(t *testing.T) {
+	var (
+		cipherG, _ = noiseCipher.FromString("ChaChaPoly")
+		hashG, _   = noiseHash.FromString("BLAKE2s")
+		curveG, _  = noiseCurve.FromString("secp256k1")
+
+		key = [CipherKeySize]byte{
+			0xa8, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0x6b,
+		}
+		pubBitcoin = [33]byte{
+			0x2, 0xf8, 0xb4, 0x31, 0x66, 0x45, 0x7e, 0x42,
+			0x67, 0xac, 0x22, 0x54, 0x1b, 0x5a, 0xb6, 0x17,
+			0x95, 0x64, 0x33, 0xaa, 0x9a, 0x8b, 0x26, 0x4a,
+			0xbb, 0x28, 0xdc, 0x99, 0x49, 0xfa, 0x97, 0x8,
+			0xe0,
+		}
+		maxNonce = cipher.MaxNonce
+
+		protocolName = []byte("TestNoise")
+		prologue     = []byte("YY")
+		psk          = []byte{
+			0xa8, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0x6b,
+		}
+		pskToken = [][]byte{psk}
+
+		csG = newCipherState(cipherG, nil)
+		ssG = newSymmetricState(csG, hashG, curveG)
+
+		s, _       = curveG.GenerateKeyPair(nil)
+		remoteS, _ = curveG.GenerateKeyPair(nil)
+		rs         = remoteS.PubKey()
+
+		XNpsk0, _ = pattern.FromString("XNpsk0") // 3 lines of pattern
+	)
+
 	payload := []byte{}
 
 	// test error when processing token e
 	hs, err := newHandshakeState(protocolName, prologue, pskToken,
-		true, ss, XNpsk0, s, nil, rs, nil, false)
+		true, ssG, XNpsk0, s, nil, rs, nil, false)
 	require.Nil(t, err, "failed to create handshake state")
-
-	hs.localEphemeral = e
-	p, err := hs.processWriteToken(pattern.TokenE, payload)
-	require.Nil(t, p, "should return no payload")
-	require.Equal(t, errKeyNotEmpty("local ephemeral key"), err,
-		"error returned not match")
 
 	// test error when processing token s
 	hs.ss.cs.key = key
 	hs.ss.cs.nonce = maxNonce
-	p, err = hs.processWriteToken(pattern.TokenS, payload)
+	p, err := hs.processWriteToken(pattern.TokenS, payload)
 	require.Nil(t, p, "should return no payload")
 	require.Equal(t, cipher.ErrNonceOverflow, err, "error returned not match")
 
@@ -535,7 +826,7 @@ func TestProcessWriteToken(t *testing.T) {
 
 	// test process the line "e, s"
 	hs, err = newHandshakeState(protocolName, prologue, pskToken,
-		true, ss, XNpsk0, s, nil, rs, nil, false)
+		true, ssG, XNpsk0, s, nil, rs, nil, false)
 	p, err = hs.processWriteToken(pattern.TokenE, payload)
 	require.Nil(t, err, "should return no error")
 	require.Equal(t, len(pubBitcoin), len(p),
@@ -552,11 +843,39 @@ func TestProcessWriteToken(t *testing.T) {
 }
 
 func TestReadMessageErrors(t *testing.T) {
+	var (
+		cipherG, _ = noiseCipher.FromString("ChaChaPoly")
+		hashG, _   = noiseHash.FromString("BLAKE2s")
+		curveG, _  = noiseCurve.FromString("secp256k1")
+
+		protocolName = []byte("TestNoise")
+		prologue     = []byte("YY")
+		psk          = []byte{
+			0xa8, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0x6b,
+		}
+		pskToken = [][]byte{psk}
+
+		csG = newCipherState(cipherG, nil)
+		ssG = newSymmetricState(csG, hashG, curveG)
+
+		e, _       = curveG.GenerateKeyPair(nil)
+		s, _       = curveG.GenerateKeyPair(nil)
+		remoteE, _ = curveG.GenerateKeyPair(nil)
+		remoteS, _ = curveG.GenerateKeyPair(nil)
+		re         = remoteE.PubKey()
+		rs         = remoteS.PubKey()
+
+		XNpsk0, _ = pattern.FromString("XNpsk0") // 3 lines of pattern
+	)
+
 	// -> e
 	// <- e, ee
 	// -> s, se
 	hs, _ := newHandshakeState(protocolName, prologue, pskToken,
-		true, ss, XNpsk0, s, nil, rs, nil, false)
+		true, ssG, XNpsk0, s, nil, rs, nil, false)
 
 	// test message too big
 	bigMessage := [maxMessageSize + 1]byte{}
@@ -601,6 +920,34 @@ func TestReadMessageErrors(t *testing.T) {
 }
 
 func TestWriteMessageErrors(t *testing.T) {
+	var (
+		cipherG, _ = noiseCipher.FromString("ChaChaPoly")
+		hashG, _   = noiseHash.FromString("BLAKE2s")
+		curveG, _  = noiseCurve.FromString("secp256k1")
+
+		key = [CipherKeySize]byte{
+			0xa8, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0x6b,
+		}
+		maxNonce = cipher.MaxNonce
+
+		protocolName = []byte("TestNoise")
+		prologue     = []byte("YY")
+		psk          = []byte{
+			0xa8, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0x6b,
+		}
+		pskToken = [][]byte{psk}
+
+		csG  = newCipherState(cipherG, nil)
+		ssG  = newSymmetricState(csG, hashG, curveG)
+		s, _ = curveG.GenerateKeyPair(nil)
+	)
+
 	// create a test pattern with nonsense
 	err := pattern.Register("YYY", `
 	-> e, s
@@ -611,7 +958,7 @@ func TestWriteMessageErrors(t *testing.T) {
 	YYYpsk0, _ := pattern.FromString("YYYpsk0")
 
 	hs, err := newHandshakeState(protocolName, prologue, pskToken,
-		true, ss, YYYpsk0, s, nil, nil, nil, false)
+		true, ssG, YYYpsk0, s, nil, nil, nil, false)
 	require.Nil(t, err, "should return no error")
 
 	// test message too big
@@ -641,13 +988,6 @@ func TestWriteMessageErrors(t *testing.T) {
 	// reset to line 1 and continue the test
 	hs.patternIndex = 0
 
-	// test e is not empty error
-	hs.localEphemeral = e
-	c, err = hs.WriteMessage(payload)
-	require.Equal(t, errKeyNotEmpty("local ephemeral key"), err,
-		"should return key not empty error")
-	require.Nil(t, c, "should return no ciphertext")
-
 	// test encryt with error
 	hs.localEphemeral = nil
 	hs.ss.cs.key = key
@@ -660,14 +1000,38 @@ func TestWriteMessageErrors(t *testing.T) {
 }
 
 func TestReset(t *testing.T) {
-	hs, _ := newHandshakeState(protocolName, prologue, pskToken,
-		true, ss, XNpsk0, s, nil, rs, nil, false)
+	var (
+		cipherG, _ = noiseCipher.FromString("ChaChaPoly")
+		hashG, _   = noiseHash.FromString("BLAKE2s")
+		curveG, _  = noiseCurve.FromString("secp256k1")
 
-	hs.reset()
-	require.Nil(t, hs.psks, "reset psks")
+		protocolName = []byte("TestNoise")
+		prologue     = []byte("YY")
+		psk          = []byte{
+			0xa8, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0x6b,
+		}
+		pskToken = [][]byte{psk}
+
+		csG = newCipherState(cipherG, nil)
+		ssG = newSymmetricState(csG, hashG, curveG)
+
+		s, _       = curveG.GenerateKeyPair(nil)
+		remoteS, _ = curveG.GenerateKeyPair(nil)
+		rs         = remoteS.PubKey()
+
+		XNpsk0, _ = pattern.FromString("XNpsk0") // 3 lines of pattern
+	)
+
+	hs, _ := newHandshakeState(protocolName, prologue, pskToken,
+		true, ssG, XNpsk0, s, nil, rs, nil, false)
+
+	hs.Reset()
+	require.NotNil(t, hs.psks, "should not touch psks")
 	require.Equal(t, 0, hs.patternIndex, "reset patternIndex")
-	require.False(t, hs.initiator, "reset initiator")
-	require.Nil(t, hs.hp, "reset hp")
+	require.NotNil(t, hs.hp, "should not touch hp")
 	require.Nil(t, hs.localStatic, "reset localStatic")
 	require.Nil(t, hs.remoteStaticPub, "reset remoteStaticPub")
 	require.Nil(t, hs.localEphemeral, "reset localEphemeral")
@@ -678,6 +1042,35 @@ func TestReset(t *testing.T) {
 }
 
 func TestHandshakeState(t *testing.T) {
+	var (
+		cipherA, _ = noiseCipher.FromString("AESGCM")
+		cipherB, _ = noiseCipher.FromString("AESGCM")
+
+		hashA, _ = noiseHash.FromString("SHA256")
+		hashB, _ = noiseHash.FromString("SHA256")
+
+		curveA, _ = noiseCurve.FromString("25519")
+		curveB, _ = noiseCurve.FromString("25519")
+
+		csA = newCipherState(cipherA, nil)
+		ssA = newSymmetricState(csA, hashA, curveA)
+
+		csB = newCipherState(cipherB, nil)
+		ssB = newSymmetricState(csB, hashB, curveB)
+
+		protocolName = []byte("TestNoise")
+		prologue     = []byte("YY")
+		psk          = []byte{
+			0xa8, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+			0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0x6b,
+		}
+		pskToken = [][]byte{psk}
+
+		XN, _ = pattern.FromString("XN") // 3 lines of pattern
+	)
+
 	// Pattern used for testing,
 	// -> e
 	// <- e, ee
@@ -764,10 +1157,10 @@ func TestHandshakeState(t *testing.T) {
 	require.Nil(t, err, "GetInfo failed")
 
 	// test reset
-	alice.reset()
+	alice.Reset()
 	require.Nil(t, alice.SendCipherState, "reset SendCipherState")
 	require.Nil(t, alice.RecvCipherState, "reset RecvCipherState")
-	bob.reset()
+	bob.Reset()
 	require.Nil(t, bob.SendCipherState, "reset SendCipherState")
 	require.Nil(t, bob.RecvCipherState, "reset RecvCipherState")
 }

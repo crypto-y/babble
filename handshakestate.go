@@ -68,6 +68,8 @@ type HandshakeState struct {
 	// application. pskIndex tracks the psk token processed.
 	psks     [][CipherKeySize]byte
 	pskIndex int
+
+	prologue []byte
 }
 
 // Finished returns a bool to indicate whether the handshake is done. The
@@ -152,9 +154,11 @@ func (hs *HandshakeState) GetInfo() ([]byte, error) {
 		CipherKey   string  `json:"cipher_key"`
 		Digest      string  `json:"digest"`
 		Finished    bool    `json:"finished"`
+		Initiator   bool    `json:"initiator"`
 		KeyPair     keyPair `json:"key_pair"`
 		Nonce       uint64  `json:"nonce"`
 		Pattern     pattern `json:"pattern"`
+		Prologue    string  `json:"prologue"`
 		SendCipher  cipher  `json:"send_cipher"`
 		RecvCipher  cipher  `json:"recv_cipher"`
 		Rekey       rekey   `json:"rekey"`
@@ -198,11 +202,24 @@ func (hs *HandshakeState) GetInfo() ([]byte, error) {
 		kp.RemoteEphemeralPub = fmt.Sprintf("%x", hs.remoteEphemeralPub.Bytes())
 	}
 
+	// extract ciphers
+	sc := cipher{}
+	if hs.SendCipherState != nil {
+		sc.Key = fmt.Sprintf("%x", hs.SendCipherState.key)
+		sc.Nonce = hs.SendCipherState.nonce
+	}
+	rc := cipher{}
+	if hs.RecvCipherState != nil {
+		rc.Key = fmt.Sprintf("%x", hs.RecvCipherState.key)
+		rc.Nonce = hs.RecvCipherState.nonce
+	}
+
 	i := info{
 		ChainingKey: fmt.Sprintf("%x", hs.ss.chainingKey),
 		CipherKey:   fmt.Sprintf("%x", hs.ss.cs.key),
 		Digest:      fmt.Sprintf("%x", hs.ss.digest),
 		Finished:    hs.Finished(),
+		Initiator:   hs.initiator,
 		KeyPair:     kp,
 		Nonce:       hs.ss.cs.nonce,
 		Pattern: pattern{
@@ -215,15 +232,10 @@ func (hs *HandshakeState) GetInfo() ([]byte, error) {
 				Keys: psks,
 			},
 		},
-		SendCipher: cipher{
-			Key:   fmt.Sprintf("%x", hs.SendCipherState.key),
-			Nonce: hs.SendCipherState.nonce,
-		},
-		RecvCipher: cipher{
-			Key:   fmt.Sprintf("%x", hs.RecvCipherState.key),
-			Nonce: hs.RecvCipherState.nonce,
-		},
-		Rekey: rk,
+		Prologue:   fmt.Sprintf("%s", hs.prologue),
+		SendCipher: sc,
+		RecvCipher: rc,
+		Rekey:      rk,
 	}
 
 	return jsonMarshal(i)
@@ -275,6 +287,7 @@ func (hs *HandshakeState) initialize(
 	hs.localStatic, hs.localEphemeral = s, e
 	hs.remoteStaticPub, hs.remoteEphemeralPub = rs, re
 	hs.hp = hp
+	hs.prologue = prologue
 
 	if err := hs.processPreMessage(); err != nil {
 		return err
@@ -382,16 +395,14 @@ func (hs *HandshakeState) WriteMessage(payload []byte) ([]byte, error) {
 	if err := hs.incrementPatternIndexAndSplit(); err != nil {
 		return nil, err
 	}
-
 	return buffer, nil
 }
 
-// reset sets every thing to nil value.
-func (hs *HandshakeState) reset() {
-	hs.psks = nil
+// Reset sets the handshake to initial state.
+func (hs *HandshakeState) Reset() {
 	hs.patternIndex = 0
-	hs.initiator = false
-	hs.hp = nil
+
+	// TODO: maybe leave them alone if were passed from config?
 	hs.localStatic, hs.localEphemeral = nil, nil
 	hs.remoteStaticPub, hs.remoteEphemeralPub = nil, nil
 
@@ -401,12 +412,12 @@ func (hs *HandshakeState) reset() {
 	}
 
 	if hs.SendCipherState != nil {
-		hs.SendCipherState.reset()
+		hs.SendCipherState.Reset()
 		hs.SendCipherState = nil
 	}
 
 	if hs.RecvCipherState != nil {
-		hs.RecvCipherState.reset()
+		hs.RecvCipherState.Reset()
 		hs.RecvCipherState = nil
 	}
 }
@@ -480,6 +491,12 @@ func (hs *HandshakeState) incrementPatternIndexAndSplit() error {
 	if err != nil {
 		return err
 	}
+
+	// for one-way, ignore the second cipher state
+	if len(hs.hp.MessagePattern) == 1 {
+		c2 = nil
+	}
+
 	if hs.initiator {
 		hs.SendCipherState = c1
 		hs.RecvCipherState = c2
@@ -713,31 +730,11 @@ func (hs *HandshakeState) pskMode() bool {
 func (hs *HandshakeState) validateKeys() error {
 	for _, line := range hs.hp.MessagePattern {
 		for _, token := range line[1:] {
-			switch token {
-			case pattern.TokenE:
-				if hs.mustWrite(line[0]) {
-					// e must be empty for writing
-					if hs.localEphemeral != nil {
-						return errKeyNotEmpty("local ephemeral key")
-					}
-				} else {
-					// re must be empty for reading
-					if hs.remoteEphemeralPub != nil {
-						return errKeyNotEmpty("remote ephemeral key")
-					}
-				}
-			case pattern.TokenS:
-				if hs.mustWrite(line[0]) {
-					// s must NOT be empty for writing
-					if hs.localStatic == nil {
-						if err := hs.handleMissingKeyS(); err != nil {
-							return err
-						}
-					}
-				} else {
-					// rs must be empty for reading
-					if hs.remoteStaticPub != nil {
-						return errKeyNotEmpty("remote static key")
+			if token == pattern.TokenS && hs.mustWrite(line[0]) {
+				// s must NOT be empty for writing
+				if hs.localStatic == nil {
+					if err := hs.handleMissingKeyS(); err != nil {
+						return err
 					}
 				}
 			}
@@ -766,6 +763,7 @@ func (hs *HandshakeState) readTokenE(payload []byte) ([]byte, error) {
 		return nil, err
 	}
 	hs.remoteEphemeralPub = pub
+
 	hs.ss.MixHash(hs.remoteEphemeralPub.Bytes())
 
 	// if psk enabled, call MixKey
@@ -776,19 +774,18 @@ func (hs *HandshakeState) readTokenE(payload []byte) ([]byte, error) {
 	return payload[dhlen:], nil
 }
 
-// writeTokenE sets e (which must be empty) to GENERATE_KEYPAIR(). Appends
+// writeTokenE sets e (if empty) to GENERATE_KEYPAIR(). Appends
 // e.public_key to the buffer. Calls MixHash(e.public_key).
 func (hs *HandshakeState) writeTokenE(payload []byte) ([]byte, error) {
-	// check empty
-	if hs.localEphemeral != nil {
-		return nil, errKeyNotEmpty("local ephemeral key")
+	// generate key if empty
+	if hs.localEphemeral == nil {
+		key, err := hs.ss.curve.GenerateKeyPair(nil)
+		if err != nil {
+			return nil, err
+		}
+		hs.localEphemeral = key
 	}
 
-	key, err := hs.ss.curve.GenerateKeyPair(nil)
-	if err != nil {
-		return nil, err
-	}
-	hs.localEphemeral = key
 	payload = append(payload, hs.localEphemeral.PubKey().Bytes()...)
 
 	hs.ss.MixHash(hs.localEphemeral.PubKey().Bytes())
@@ -802,22 +799,16 @@ func (hs *HandshakeState) writeTokenE(payload []byte) ([]byte, error) {
 }
 
 // readTokenS sets temp to the next DHLEN + ADLEN bytes of the payload if
-// HasKey() == True, or to the next DHLEN bytes otherwise. Sets rs (which must
-// be empty) to DecryptAndHash(temp).
+// HasKey() == True, or to the next DHLEN bytes otherwise. Sets rs (if empty) to
+// DecryptAndHash(temp).
 func (hs *HandshakeState) readTokenS(payload []byte) ([]byte, error) {
-	// check empty
-	if hs.remoteStaticPub != nil {
-		return nil, errKeyNotEmpty("remote static key")
-	}
-
 	// The protocol specified a temp key with length DHLEN + 16 bytes, where the
 	// 16 is the AD size of the ciphers used. To generalize the usage, we use
 	// adlen defined by each cipher so that it's not limited to 16 bytes.
 	dhlen := hs.ss.curve.Size()
-	adlen := hs.ss.cs.cipher.Cipher().Overhead()
-
 	tempLen := dhlen
 	if hs.ss.cs.hasKey() {
+		adlen := hs.ss.cs.cipher.Cipher().Overhead()
 		tempLen = dhlen + adlen
 	}
 
@@ -838,7 +829,10 @@ func (hs *HandshakeState) readTokenS(payload []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	hs.remoteStaticPub = pub
+	// check empty
+	if hs.remoteStaticPub == nil {
+		hs.remoteStaticPub = pub
+	}
 
 	return payload[tempLen:], nil
 
