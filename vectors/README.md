@@ -1,15 +1,15 @@
 
 noise-c
 https://github.com/rweather/noise-c
+480
 
 haskell
 https://github.com/centromere/cacophony
-
-go
-https://github.com/flynn/noise
+944
 
 rust
 https://github.com/mcginty/snow
+408
 
-Erlang enoise
-https://github.com/aeternity/enoise
+total
+1832
