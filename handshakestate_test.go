@@ -89,6 +89,26 @@ func TestInitializeHandshakeState(t *testing.T) {
 	require.NotNil(t, ck, "ck is not nil")
 	h := hs.GetDigest()
 	require.NotNil(t, h, "digest is not nil")
+
+	err = pattern.Register("YY", `
+	-> e, s
+	...
+	-> ee
+	`)
+	require.Nil(t, err, "failed to create a new pattern")
+	YY, _ := pattern.FromString("YYpsk0")
+
+	// test no autopadding, will fail to create hs
+	hs, err = newHandshakeState(protocolName, prologue, pskToken,
+		true, ssG, YY, nil, nil, nil, nil, false)
+	require.NotNil(t, err, "failed to create hs")
+
+	// test autopadding s
+	hs, err = newHandshakeState(protocolName, prologue, pskToken,
+		true, ssG, YY, nil, nil, nil, nil, true)
+	require.NoError(t, err, "failed to create hs")
+	require.NotNil(t, hs.localStatic, "autopadding for s")
+	require.NotNil(t, hs.localEphemeral, "autopadding for e")
 }
 
 func TestValidateKeys(t *testing.T) {
@@ -222,7 +242,7 @@ func TestProcessPreMessage(t *testing.T) {
 	}
 }
 
-func TestincrementPatternIndexAndSplit(t *testing.T) {
+func TestIncrementPatternIndexAndSplit(t *testing.T) {
 	var (
 		cipherG, _ = noiseCipher.FromString("ChaChaPoly")
 		hashG, _   = noiseHash.FromString("BLAKE2s")
@@ -232,46 +252,60 @@ func TestincrementPatternIndexAndSplit(t *testing.T) {
 		prologue     = []byte("YY")
 		csG          = newCipherState(cipherG, nil)
 		ssG          = newSymmetricState(csG, hashG, curveG)
-		XN, _        = pattern.FromString("XN") // 3 lines of pattern
+
+		s, _ = curveG.GenerateKeyPair(nil)
+
+		XN, _ = pattern.FromString("XN") // 3 lines of pattern
 	)
+	require := require.New(t)
 
 	hs, err := newHandshakeState(protocolName, prologue, nil,
-		true, ssG, XN, nil, nil, nil, nil, false)
-	require.Nil(t, err, "failed to create handshake state")
-	require.Equal(t, 0, hs.patternIndex, "pattern index is not 0")
-	require.Nil(t, hs.SendCipherState, "no send cipher inited")
-	require.Nil(t, hs.RecvCipherState, "no recv cipher inited")
+		true, ssG, XN, s, nil, nil, nil, false)
+	require.Nil(err, "failed to create handshake state")
+	require.Equal(0, hs.patternIndex, "pattern index is not 0")
+	require.Nil(hs.SendCipherState, "no send cipher inited")
+	require.Nil(hs.RecvCipherState, "no recv cipher inited")
 
 	// increment once
 	err = hs.incrementPatternIndexAndSplit()
-	require.Nil(t, err, "failed to increment once")
-	require.Equal(t, 1, hs.patternIndex, "pattern index is not 1")
-	require.Nil(t, hs.SendCipherState, "should have no send cipher inited")
-	require.Nil(t, hs.RecvCipherState, "should have no recv cipher inited")
+	require.Nil(err, "failed to increment once")
+	require.Equal(1, hs.patternIndex, "pattern index is not 1")
+	require.Nil(hs.SendCipherState, "should have no send cipher inited")
+	require.Nil(hs.RecvCipherState, "should have no recv cipher inited")
 
-	// increment twice, should be finished
+	// increment twice, should not be finished
 	err = hs.incrementPatternIndexAndSplit()
-	require.Nil(t, err, "failed to increment once")
-	require.Equal(t, 2, hs.patternIndex, "pattern index is not 2")
-	require.NotNil(t, hs.SendCipherState, "should have send cipher inited")
-	require.NotNil(t, hs.RecvCipherState, "should have recv cipher inited")
+	require.Nil(err, "failed to increment once")
+	require.Equal(2, hs.patternIndex, "pattern index is not 2")
+	require.Nil(hs.SendCipherState, "should have no send cipher inited")
+	require.Nil(hs.RecvCipherState, "should have no recv cipher inited")
+
+	// increment three times, should be finished
+	err = hs.incrementPatternIndexAndSplit()
+	require.Nil(err, "failed to increment once")
+	require.Equal(3, hs.patternIndex, "pattern index is not 3")
+	require.NotNil(hs.SendCipherState, "should have send cipher inited")
+	require.NotNil(hs.RecvCipherState, "should have recv cipher inited")
 
 	// make an overflow error
 	err = hs.incrementPatternIndexAndSplit()
-	require.NotNil(t, err, "should return an overflow error")
-	require.Equal(t, 3, hs.patternIndex, "pattern index is not 1")
+	require.Equal(errPatternIndexOverflow, err,
+		"should return an overflow error")
+	require.Equal(4, hs.patternIndex, "pattern index is not 1")
 
 	// make an invalid chain key error
 	hs, _ = newHandshakeState(protocolName, prologue, nil,
-		true, ssG, XN, nil, nil, nil, nil, false)
+		true, ssG, XN, s, nil, nil, nil, false)
 	hs.ss.chainingKey = nil
 	// increase twice to trigger the error
 	hs.incrementPatternIndexAndSplit()
+	hs.incrementPatternIndexAndSplit()
 	err = hs.incrementPatternIndexAndSplit()
-	require.NotNil(t, err, "should return an invalid chain size error")
-	require.Equal(t, 2, hs.patternIndex, "pattern index is not 1")
-	require.Nil(t, hs.SendCipherState, "should have no send cipher inited")
-	require.Nil(t, hs.RecvCipherState, "should have no recv cipher inited")
+	require.Equal(errInvalidChainingKey, err,
+		"should return an invalid chain size error")
+	require.Equal(3, hs.patternIndex, "pattern index is not 1")
+	require.Nil(hs.SendCipherState, "should have no send cipher inited")
+	require.Nil(hs.RecvCipherState, "should have no recv cipher inited")
 
 }
 
@@ -607,12 +641,10 @@ func TestProcessReadToken(t *testing.T) {
 	}{
 		{"successfully process e", pattern.TokenE, re.Bytes(), nil, nil,
 			nil, []byte{}},
-		// {"error process e", pattern.TokenE, re.Bytes(), re, nil,
-		// 	errKeyNotEmpty("remote ephemeral key"), nil},
 		{"successfully process s", pattern.TokenS, rs.Bytes(), nil, nil,
 			nil, []byte{}},
-		// {"error process s", pattern.TokenS, rs.Bytes(), nil, rs,
-		// 	errKeyNotEmpty("remote static key"), nil},
+		{"error process s", pattern.TokenS, protocolName, nil, rs,
+			errInvalidPayload, nil},
 		{"successfully process psk", pattern.TokenPsk, rs.Bytes(), nil, nil,
 			nil, rs.Bytes()},
 		{"successfully process dh", pattern.TokenSs, rs.Bytes(), nil, rs,
@@ -950,8 +982,8 @@ func TestWriteMessageErrors(t *testing.T) {
 
 	// create a test pattern with nonsense
 	err := pattern.Register("YYY", `
-	-> e, s
-	<- e
+	-> s
+	<- s
 	-> s
 	`)
 	require.Nil(t, err, "failed to create a new pattern")
@@ -991,11 +1023,12 @@ func TestWriteMessageErrors(t *testing.T) {
 	// test encryt with error
 	hs.localEphemeral = nil
 	hs.ss.cs.key = key
+	hs.ss.cs.cipher = nil
 	hs.ss.cs.nonce = maxNonce
 	hs.patternIndex = 2
 	hs.localStatic = s
 	c, err = hs.WriteMessage(payload)
-	require.Equal(t, cipher.ErrNonceOverflow, err, "should have an error")
+	require.Equal(t, errCipherNotInitialized, err, "should have an error")
 	require.Nil(t, c, "should return no ciphertext")
 }
 

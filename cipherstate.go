@@ -18,7 +18,8 @@ var (
 	// ZEROLEN is a zero-length byte sequence.
 	ZEROLEN []byte
 
-	errMissingCipherKey = errors.New("No cipher key initialized")
+	errCipherNotInitialized = errors.New("cipher not initialized")
+	errMissingCipherKey     = errors.New("No cipher key initialized")
 )
 
 // CipherState contains key and nonce variables, which it uses to encrypt and
@@ -66,7 +67,6 @@ func (cs *CipherState) DecryptWithAd(ad, ciphertext []byte) ([]byte, error) {
 	if err := cs.incrementNonce(); err != nil {
 		return nil, err
 	}
-
 	return plaintext, nil
 }
 
@@ -75,6 +75,10 @@ func (cs *CipherState) DecryptWithAd(ad, ciphertext []byte) ([]byte, error) {
 func (cs *CipherState) EncryptWithAd(ad, plaintext []byte) ([]byte, error) {
 	if !cs.hasKey() {
 		return plaintext, nil
+	}
+
+	if cs.cipher == nil {
+		return nil, errCipherNotInitialized
 	}
 
 	ciphertext, err := cs.cipher.Encrypt(cs.nonce, ad, plaintext)

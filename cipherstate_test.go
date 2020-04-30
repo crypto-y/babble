@@ -102,7 +102,8 @@ func TestCipherStateNoRekeyManager(t *testing.T) {
 	// test decrypt errors
 	plaintext, err = bob.DecryptWithAd(ad, message)
 	require.Nil(t, plaintext, "no plaintext decrypted")
-	require.NotNil(t, err, "decrypt should return an error")
+	require.Equal(t, "cipher: message authentication failed", err.Error(),
+		"decrypt should return an error")
 }
 
 func TestCipherStateDefaultRekeyManager(t *testing.T) {

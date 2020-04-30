@@ -451,6 +451,7 @@ func errMissingKey(s string) error {
 // flag is turned on.
 func (hs *HandshakeState) handleMissingKeyE() error {
 	if hs.autoPadding {
+		// the only error comes from the underlying rand.Read.
 		key, err := hs.ss.curve.GenerateKeyPair(nil)
 		if err != nil {
 			return err
@@ -467,6 +468,7 @@ func (hs *HandshakeState) handleMissingKeyE() error {
 func (hs *HandshakeState) handleMissingKeyS() error {
 	if hs.autoPadding {
 		key, err := hs.ss.curve.GenerateKeyPair(nil)
+		// the only error comes from the underlying rand.Read.
 		if err != nil {
 			return err
 		}
@@ -780,6 +782,7 @@ func (hs *HandshakeState) writeTokenE(payload []byte) ([]byte, error) {
 	// generate key if empty
 	if hs.localEphemeral == nil {
 		key, err := hs.ss.curve.GenerateKeyPair(nil)
+		// the only error comes from the underlying rand.Read.
 		if err != nil {
 			return nil, err
 		}
