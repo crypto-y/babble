@@ -24,7 +24,7 @@ func TestVectors(t *testing.T) {
 	err = json.Unmarshal(data, &vectorsFile)
 	require.NoError(err, "failed to unmarshal data")
 
-	for i, v := range vectorsFile.Vectors[:] {
+	for i, v := range vectorsFile.Vectors {
 		t.Run(strconv.Itoa(i)+" - "+v.ProtocolName, func(t *testing.T) {
 			testVector(t, &v)
 		})

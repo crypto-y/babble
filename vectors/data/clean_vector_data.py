@@ -51,32 +51,32 @@ with open("./snow.txt") as f:
             vector_data.append(record)
 
 
-# # process cacophony.txt
-# with open("./cacophony.txt") as f:
-#     data = json.load(f)
-#     print("cacophony", len(data["vectors"]))
-#     total += len(data["vectors"])
-#     for record in data["vectors"]:
-#         if record["protocol_name"] not in unique_names:
-#             unique_names.add(record["protocol_name"])
-#             vector_data.append(record)
+# process cacophony.txt
+with open("./cacophony.txt") as f:
+    data = json.load(f)
+    print("cacophony", len(data["vectors"]))
+    total += len(data["vectors"])
+    for record in data["vectors"]:
+        if record["protocol_name"] not in unique_names:
+            unique_names.add(record["protocol_name"])
+            vector_data.append(record)
 
 
 # # process noise-c-basic.txt
-# with open("./noise-c-basic.txt") as f:
-#     data = json.load(f)
-#     print("noise-c-basic", len(data["vectors"]))
-#     total += len(data["vectors"])
-#     for record in data["vectors"]:
-#         # skip PSK
-#         components = record["name"].split("_")
-#         if components[0].endswith("PSK"):
-#             continue
+with open("./noise-c-basic.txt") as f:
+    data = json.load(f)
+    print("noise-c-basic", len(data["vectors"]))
+    total += len(data["vectors"])
+    for record in data["vectors"]:
+        # skip PSK
+        components = record["name"].split("_")
+        if components[0].endswith("PSK"):
+            continue
 
-#         record["protocol_name"] = "_".join(components)
-#         if record["protocol_name"] not in unique_names:
-#             unique_names.add(record["protocol_name"])
-#             vector_data.append(record)
+        record["protocol_name"] = "_".join(components)
+        if record["protocol_name"] not in unique_names:
+            unique_names.add(record["protocol_name"])
+            vector_data.append(record)
 
 
 print(
