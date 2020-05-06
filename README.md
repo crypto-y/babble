@@ -315,6 +315,7 @@ You can check the package documentation for details on how to implement new comp
 
 
 
-# Security
+# Vector tests
 
-The current version uses the test vectors from the [rust implementation](https://github.com/mcginty/snow). A more robust test vectors gathered online will be used in the next release.
+See [vector documentation](vectors/README.md) for more details.
+
