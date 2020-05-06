@@ -43,7 +43,7 @@ func newSha3() noiseHash.Hash {
 }
 
 func main() {
-	// register
+	// register SHA3
 	noiseHash.Register("SHA3", newSha3)
 
 	noiseSha3, _ := noiseHash.FromString("SHA3")
