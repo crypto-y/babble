@@ -81,7 +81,7 @@ func TestHash(t *testing.T) {
 			_, _ = hf.Write(message)
 			hashDigest = hex.EncodeToString(hf.Sum(nil))
 			require.NotEqual(t, tt.digest, hashDigest, "hash digest is wrong")
-			h.Reset()
+			hf.Reset()
 			_, _ = hf.Write(message)
 			hashDigest = hex.EncodeToString(hf.Sum(nil))
 			require.Equal(t, tt.digest, hashDigest, "hash digest is wrong")
