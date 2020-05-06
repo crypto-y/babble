@@ -60,38 +60,60 @@ func TestSetUp(t *testing.T) {
 	n, err = FromString("Npsk")
 	require.Nil(t, n, "should return nil")
 	require.NotNil(t, err, "should return an error")
+}
 
-	// test padding psk tokens
-	// -> e
+func TestPskPadding(t *testing.T) {
+	// test padding a psk0 token
+	// -> e, es
 	// <- e, ee
-	hp, err := FromString("NNpsk0+psk1+psk2")
+	hp, err := FromString("NKpsk0")
 	expected := pattern{
-		patternLine{TokenInitiator, TokenPsk, TokenE, TokenPsk},
+		patternLine{TokenInitiator, TokenPsk, TokenE, TokenEs},
+		patternLine{TokenResponder, TokenE, TokenEe},
+	}
+	require.NoError(t, err, "failed to get NK with psk")
+	require.Equal(t, expected, hp.MessagePattern, "pattern mismatched")
+	require.Equal(t, "NKpsk0", hp.String(), "name mismatched")
+
+	// test padding a psk1 token
+	hp, err = FromString("NKpsk1")
+	expected = pattern{
+		patternLine{TokenInitiator, TokenE, TokenEs, TokenPsk},
+		patternLine{TokenResponder, TokenE, TokenEe},
+	}
+	require.NoError(t, err, "failed to get NK with psk")
+	require.Equal(t, expected, hp.MessagePattern, "pattern mismatched")
+	require.Equal(t, "NKpsk1", hp.String(), "name mismatched")
+
+	// test padding psk at different places
+	hp, err = FromString("NKpsk1+psk2")
+	expected = pattern{
+		patternLine{TokenInitiator, TokenE, TokenEs, TokenPsk},
 		patternLine{TokenResponder, TokenE, TokenEe, TokenPsk},
 	}
-	require.NoError(t, err, "failed to get NN with psk")
+	require.NoError(t, err, "failed to get NK with psk")
 	require.Equal(t, expected, hp.MessagePattern, "pattern mismatched")
-	require.Equal(t, "NNpsk0+psk1+psk2", hp.String(), "name mismatched")
+	require.Equal(t, "NKpsk1+psk2", hp.String(), "name mismatched")
 
 	// fallback has no effect
-	hp, err = FromString("NNfallback")
+	hp, err = FromString("NKfallback")
 	expected = pattern{
-		patternLine{TokenInitiator, TokenE},
+		patternLine{TokenInitiator, TokenE, TokenEs},
 		patternLine{TokenResponder, TokenE, TokenEe},
 	}
-	require.NoError(t, err, "failed to get NN with fallback")
+	require.NoError(t, err, "failed to get NK with fallback")
 	require.Equal(t, expected, hp.MessagePattern, "pattern mismatched")
-	require.Equal(t, "NNfallback", hp.String(), "name mismatched")
+	require.Equal(t, "NKfallback", hp.String(), "name mismatched")
 
-	// NN should stay unchanged
-	hp, err = FromString("NN")
+	// NK should stay unchanged
+	hp, err = FromString("NK")
 	expected = pattern{
-		patternLine{TokenInitiator, TokenE},
+		patternLine{TokenInitiator, TokenE, TokenEs},
 		patternLine{TokenResponder, TokenE, TokenEe},
 	}
-	require.NoError(t, err, "failed to get NN")
+	require.NoError(t, err, "failed to get NK")
 	require.Equal(t, expected, hp.MessagePattern, "pattern mismatched")
-	require.Equal(t, "NN", hp.String(), "name mismatched")
+	require.Equal(t, "NK", hp.String(), "name mismatched")
 
 }
 

@@ -95,8 +95,16 @@ func FromString(s string) (*HandshakePattern, error) {
 		Pattern:           hp.Pattern,
 		PreMessagePattern: hp.PreMessagePattern,
 	}
-	newHp.MessagePattern = make(pattern, len(hp.MessagePattern))
-	copy(newHp.MessagePattern, hp.MessagePattern)
+	// deep copy the patterns
+	p := pattern{}
+	for _, pl := range hp.MessagePattern {
+		newPl := patternLine{}
+		for _, l := range pl {
+			newPl = append(newPl, l)
+		}
+		p = append(p, newPl)
+	}
+	newHp.MessagePattern = p
 
 	// mount the modifiers if specified, eg, psk and fallback
 	modifier := strings.Trim(s, name)
