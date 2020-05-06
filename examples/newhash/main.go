@@ -1,3 +1,4 @@
+// This is an implemention for demonstration only.
 package main
 
 import (
