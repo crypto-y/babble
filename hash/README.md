@@ -17,59 +17,13 @@ Four hash functions are supported, as specified in the [noise specs](https://noi
 
 To create your own hash function, you'll need to implement the interface specified in [`hash.go`](https://github.com/yyforyongyu/babble/blob/master/hash/hash.go). Once implemented, you need to register it using `Register(Name, Hash)`.
 
-An example customized implementation, which implements the `SHA3`.
+Check [examples/newhash](../examples/newhash/main.go), which implements `SHA3`, once implemented, Once implemented, it can be used via the protocol name,
 
 ```go
-package main
+// register SHA3
+noiseHash.Register("SHA3", newSha3)
 
-import (
-	"encoding/hex"
-	"fmt"
-	"hash"
-
-	"golang.org/x/crypto/sha3"
-
-	noiseHash "github.com/yyforyongyu/babble/hash"
-)
-
-type hashSha3 struct {
-	name string
-	h    hash.Hash
-}
-
-func (s *hashSha3) BlockLen() int {
-	return s.New().BlockSize()
-}
-
-func (s *hashSha3) New() hash.Hash {
-	return s.h
-}
-
-func (s *hashSha3) HashLen() int {
-	return s.New().Size()
-}
-
-func (s *hashSha3) String() string {
-	return s.name
-}
-
-func (s *hashSha3) Reset() {
-	s.New().Reset()
-}
-
-func main() {
-	var noiseSha3 noiseHash.Hash = &hashSha3{
-		name: "SHA3",
-		h:    sha3.New512(),
-	}
-	noiseHash.Register(noiseSha3.String(), noiseSha3)
-
-	fmt.Println("sha3 block length: ", noiseSha3.BlockLen())
-	fmt.Println("sha3 hash length: ", noiseSha3.HashLen())
-
-	message := []byte("noise")
-	digest := noiseSha3.Hash(message)
-	fmt.Println("the output for 'noise' is: ", hex.EncodeToString(digest))
-}
+// Now "SHA3" is a valid hash name, and it can be used in the protocol name as,
+p, _ := babble.NewProtocol("Noise_NN_25519_ChaChaPoly_SHA3", "Demo", true)
 ```
 

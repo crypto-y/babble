@@ -10,6 +10,8 @@ From the [noise specs](https://noiseprotocol.org/noise.html#rekey),
 >
 >Applications must make these decisions on their own; there are no pattern modifiers which specify rekey behavior.
 
+
+
 ###  The `defaultRekeyer` 
 
 `defaultRekeyer` is a built-in manager and can be initiated by calling `NewDefault`, the signature is,
@@ -26,7 +28,9 @@ The `interval` parameter specifies the number of messages to be encrypted/decryp
 - `zerolen` is a zero-length byte sequence,
 - `zeros` is a sequence of 32 bytes filled with zeros.
 
-When used by the package babble, if unspecified, a default value of `10000` will be used as `interval`, and `resetNonce` is default to `true`.
+When used by the package `babble`, if unspecified, a default value of `10000` will be used as `interval`, and `resetNonce` is default to `true`.
+
+
 
 ### Customized Rekeyer
 

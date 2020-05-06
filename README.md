@@ -239,6 +239,53 @@ which prints the following result,
 
 
 
+### Performing handshakes
+
+The following code gives an example for how two participants, Alice and Bob, performs a handshake using the handshake pattern `NN`.
+
+```go
+// Pattern used here is NN,
+// -> e,
+// <- e, ee
+
+// alice is the initiator
+alice, _ := babble.NewProtocol(
+		"Noise_NN_25519_ChaChaPoly_BLAKE2s", "Demo", true)
+// bob is the responder
+bob, _ := babble.NewProtocol(
+		"Noise_NN_25519_ChaChaPoly_BLAKE2s", "Demo", false)
+
+// alice writes the first message, -> e
+ciphertext, err := alice.WriteMessage(nil)
+if err != nil {
+		fmt.Println("alice: -> e, gives an error", err)
+}
+// bob reads the first message, ->
+_, err = bob.ReadMessage(ciphertext)
+if err != nil {
+		fmt.Println("bob: -> e, gives an error", err)
+}
+
+// bob writes the second message, <- e, ee
+ciphertext, err = bob.WriteMessage(nil)
+if err != nil {
+		fmt.Println("bob: <- e, ee, gives an error", err)
+}
+// alice reads the second message, <- e, ee
+_, err = alice.ReadMessage(ciphertext)
+if err != nil {
+		fmt.Println("alice: <- e, ee, gives an error", err)
+}
+
+// the handshake is finished, we can verify that,
+fmt.Println("alice's handshake is finished: ", alice.Finished())
+fmt.Println("bob's handshake is finished: ", bob.Finished())
+```
+
+The full example can be found at [examples/handshake](examples/handshake/main.go).
+
+
+
 # Extentable Components
 
 Aside from the built-in components, it's pretty straightforward to add new components to the framework using the `Register` method defined in each component's package. For instance, to add a new pattern,
