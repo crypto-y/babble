@@ -37,10 +37,14 @@ func testVector(t *testing.T, v *vectors.Vector) {
 
 	alice, err := NewProtocolWithConfig(aliceCfg)
 	require.NoError(err, "failed to create alice's handshake state")
+	_, err = alice.GetInfo()
+	require.NoError(err, "alice failed to getinfo")
 	defer alice.Reset()
 
 	bob, err := NewProtocolWithConfig(bobCfg)
 	require.NoError(err, "failed to create bob's handshake state")
+	_, err = bob.GetInfo()
+	require.NoError(err, "bob failed to getinfo")
 	defer bob.Reset()
 
 	testMessages(t, alice, bob, v)
