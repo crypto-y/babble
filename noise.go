@@ -39,10 +39,7 @@ var (
 	ErrMissingConfig = errors.New("missing config")
 
 	// ErrProtocolInvalidName is returned when protocol name is wrong.
-	ErrProtocolInvalidName = errors.New("invalid potocol name")
-
-	// ErrProtocolNotSupported is returned when unsupported components used.
-	// ErrProtocolNotSupported = errors.New("protocol not supported")
+	ErrProtocolInvalidName = errors.New("invalid protocol name")
 )
 
 // DefaultRekeyerConfig is used for creating the default rekey manager.
@@ -127,7 +124,7 @@ type handshakeConfig struct {
 //  - if any local ephemeral/static or remote ephemeral/static keys are needed
 //  by the message pattern prior to the creation of the handshake state, it will
 //  create the corresponding keys automatically.
-// NewProtocl doesn't support PSK mode, and specifying remote public keys prior
+// NewProtocl doesn't support PSK mode, or specifying remote public keys prior
 // to the creation of the handshake state, if needed, please use
 // NewProtocolWithConfig instead.
 func NewProtocol(name, prologue string,

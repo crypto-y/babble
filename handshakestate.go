@@ -127,7 +127,7 @@ func (hs *HandshakeState) GetInfo() ([]byte, error) {
 		Name       string            `json:"name"`
 		PreMessage map[string]string `json:"pre_message"`
 		Message    map[string]string `json:"message"`
-		Index      int               `json:"index"`
+		Index      int               `json:"index_processed"`
 	}
 
 	type keyPair struct {
