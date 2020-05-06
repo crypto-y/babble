@@ -1,5 +1,7 @@
 # Babble
 
+[![Build Status](https://travis-ci.org/yyforyongyu/babble.svg?branch=master)](https://travis-ci.org/{ORG-or-USERNAME}/{REPO-NAME}) [![Coverage Status](https://coveralls.io/repos/github/yyforyongyu/babble/badge.svg?branch=master)](https://coveralls.io/github/yyforyongyu/babble?branch=master)
+
 Babble is the Go implementation of the [Noise Protocol Framework](https://noiseprotocol.org/).
 
 Being a framework, the essence is to have the ability to construct new protocols by applying any cryptographically secure functions. With extensibility in mind, babble makes it easy to add any new patterns, cipher functions, hash functions, and DH functions.
