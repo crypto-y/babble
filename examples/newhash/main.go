@@ -20,12 +20,7 @@ func (s *hashSha3) BlockLen() int {
 }
 
 func (s *hashSha3) New() hash.Hash {
-	return s.h
-}
-
-func (s *hashSha3) Hash(data []byte) []byte {
-	s.New().Write(data)
-	return s.h.Sum(nil)
+	return sha3.New512()
 }
 
 func (s *hashSha3) HashLen() int {
@@ -37,7 +32,7 @@ func (s *hashSha3) String() string {
 }
 
 func (s *hashSha3) Reset() {
-	s.New().Reset()
+	s.h.Reset()
 }
 
 func newSha3() noiseHash.Hash {
@@ -57,6 +52,8 @@ func main() {
 	fmt.Println("sha3 hash length: ", noiseSha3.HashLen())
 
 	message := []byte("noise")
-	digest := noiseSha3.Hash(message)
+	h := noiseSha3.New()
+	h.Write(message)
+	digest := h.Sum(nil)
 	fmt.Println("the output for 'noise' is: ", hex.EncodeToString(digest))
 }

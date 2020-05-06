@@ -4,6 +4,7 @@ package main
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"sort"
 
@@ -26,7 +27,7 @@ func (pk *DumbPublicKey) Bytes() []byte {
 // LoadBytes takes the input data and copies it into a DHLEN-byte array.
 func (pk *DumbPublicKey) LoadBytes(data []byte) error {
 	if len(data) != DHLEN {
-		return dh.ErrMismatchedPublicKey
+		return errors.New("public key size mismatched")
 	}
 	copy(pk.raw[:], data)
 	return nil
@@ -109,6 +110,16 @@ func (c *DumbCurve) GenerateKeyPair(entropy []byte) (dh.PrivateKey, error) {
 	priv := &DumbPrivateKey{pub: &DumbPublicKey{}}
 	priv.Update(secret)
 	return priv, nil
+}
+
+// LoadPrivateKey uses the data provided to create a new private key.
+func (c *DumbCurve) LoadPrivateKey(data []byte) (dh.PrivateKey, error) {
+	p := &DumbPrivateKey{pub: &DumbPublicKey{}}
+	if len(data) != DHLEN {
+		return nil, errors.New("private key size mismatched")
+	}
+	p.Update(data)
+	return p, nil
 }
 
 // LoadPublicKey uses the data provided to create a new public key.
