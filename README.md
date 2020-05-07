@@ -121,11 +121,11 @@ rs, _ := hex.DecodeString(
   "c3c637648530e306e1115428acc44d0f0502615ee23ec1de0e59c5a148e9a30d")
 
 cfg := &babble.ProtocolConfig{
-  Name:            "Noise_KK_25519_ChaChaPoly_BLAKE2s",
-  Initiator:       true,
-  Prologue:        "Demo",
-  LocalStaticPriv: s,
-  RemoteStaticPub: rs,
+    Name:            "Noise_KK_25519_ChaChaPoly_BLAKE2s",
+    Initiator:       true,
+    Prologue:        "Demo",
+    LocalStaticPriv: s,
+    RemoteStaticPub: rs,
 }
 p, _ := babble.NewProtocolWithConfig(cfg)
 ```
