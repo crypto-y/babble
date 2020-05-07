@@ -37,7 +37,7 @@ In addition to the main package `babble`, there are five packages which can be u
 "github.com/yyforyongyu/babble/pattern"
 ```
 
-**WARNING**: The Go's implementation of  `AESGCM` might be vunerable to side channel attack, please read [the doc](cipher/README.md) if you plan to use it.
+**WARNING**: The Go's implementation of  `AESGCM` might be vunerable to side channel attack, please read [the documentation](cipher) if you plan to use it.
 
 There are two methods can be used for contructing new handshake state, `NewProtocol` and `NewProtocolWithConfig`.
 
@@ -54,11 +54,10 @@ The `NewProtocol` is used for quickly creating a new `HandshakeState` using the 
 ```go
 // creates a new handshake state using pattern NN, curve 25519, cipher
 // ChaChaPoly and hash function BLAKE2s.
-p, _ := babble.NewProtocol(
-		"Noise_NN_25519_ChaChaPoly_BLAKE2s", "Demo", true)
+p, _ := babble.NewProtocol("Noise_NN_25519_ChaChaPoly_BLAKE2s", "Demo", true)
 ```
 
-This function uses a default `rekeyer`, which rotates the cipher key every 10000 encryption/decription and resets the nonce to be zero, read [this doc](rekey/README.md) for detailed specs.
+This function uses a default `rekeyer`, which rotates the cipher key every 10000 encryption/decription and resets the nonce to be zero, read [this documentation](rekey) for detailed specs.
 
 While it's convenient to create a protocol with three parameters, it's not achieved without a cost, in which only a limited number of patterns are supported when using `NewProtocol`. In particular,
 
@@ -68,12 +67,10 @@ While it's convenient to create a protocol with three parameters, it's not achie
 ```go
 // returns an error if the NewProtocol is used with pattern which has
 // pre-message or psks.
-_, err := babble.NewProtocol(
-		"Noise_N_25519_ChaChaPoly_BLAKE2s", "Demo", true)
+_, err := babble.NewProtocol("Noise_N_25519_ChaChaPoly_BLAKE2s", "Demo", true)
 fmt.Println(err)  // missing key: remote static key
 
-_, err := babble.NewProtocol(
-		"Noise_NNpsk0_25519_ChaChaPoly_BLAKE2s", "Demo", true)
+_, err := babble.NewProtocol("Noise_NNpsk0_25519_ChaChaPoly_BLAKE2s", "Demo", true)
 fmt.Println(err)  // psk mode: expected to have 1 psks, got 0
 ```
 
@@ -124,11 +121,11 @@ rs, _ := hex.DecodeString(
   "c3c637648530e306e1115428acc44d0f0502615ee23ec1de0e59c5a148e9a30d")
 
 cfg := &babble.ProtocolConfig{
-		Name:            "Noise_KK_25519_ChaChaPoly_BLAKE2s",
-		Initiator:       true,
-		Prologue:        "Demo",
-		LocalStaticPriv: s,
-		RemoteStaticPub: rs,
+  Name:            "Noise_KK_25519_ChaChaPoly_BLAKE2s",
+  Initiator:       true,
+  Prologue:        "Demo",
+  LocalStaticPriv: s,
+  RemoteStaticPub: rs,
 }
 p, _ := babble.NewProtocolWithConfig(cfg)
 ```
@@ -176,7 +173,7 @@ cfg := &babble.ProtocolConfig{
 p, _ := babble.NewProtocolWithConfig(cfg)
 ```
 
-You can also specify a customized `rekeyer` by defining your own rules on when and how the cipher key should be reset. Read [this doc](rekey/README.md) for more details.
+You can also specify a customized `rekeyer` by defining your own rules on when and how the cipher key should be reset. Read [this documentation](rekey) for more details.
 
 Check [here](https://pkg.go.dev/github.com/yyforyongyu/babble?tab=doc#ProtocolConfig) for the full list of parameters in the  `ProtocolConfig`.
 
@@ -251,32 +248,30 @@ The following code gives an example for how two participants, Alice and Bob, per
 // <- e, ee
 
 // alice is the initiator
-alice, _ := babble.NewProtocol(
-		"Noise_NN_25519_ChaChaPoly_BLAKE2s", "Demo", true)
+alice, _ := babble.NewProtocol("Noise_NN_25519_ChaChaPoly_BLAKE2s", "Demo", true)
 // bob is the responder
-bob, _ := babble.NewProtocol(
-		"Noise_NN_25519_ChaChaPoly_BLAKE2s", "Demo", false)
+bob, _ := babble.NewProtocol("Noise_NN_25519_ChaChaPoly_BLAKE2s", "Demo", false)
 
 // alice writes the first message, -> e
 ciphertext, err := alice.WriteMessage(nil)
 if err != nil {
-		fmt.Println("alice: -> e, gives an error", err)
+    fmt.Println("alice: -> e, gives an error", err)
 }
 // bob reads the first message, ->
 _, err = bob.ReadMessage(ciphertext)
 if err != nil {
-		fmt.Println("bob: -> e, gives an error", err)
+    fmt.Println("bob: -> e, gives an error", err)
 }
 
 // bob writes the second message, <- e, ee
 ciphertext, err = bob.WriteMessage(nil)
 if err != nil {
-		fmt.Println("bob: <- e, ee, gives an error", err)
+    fmt.Println("bob: <- e, ee, gives an error", err)
 }
 // alice reads the second message, <- e, ee
 _, err = alice.ReadMessage(ciphertext)
 if err != nil {
-		fmt.Println("alice: <- e, ee, gives an error", err)
+    fmt.Println("alice: <- e, ee, gives an error", err)
 }
 
 // the handshake is finished, we can verify that,
@@ -298,8 +293,8 @@ import "github.com/yyforyongyu/babble/pattern"
 // Register a dumb pattern
 name := "YY"
 rawPattern := `
-	-> e
-	<- e, ee, es`
+  -> e
+  <- e, ee, es`
 
 // Register will validate the pattern, if invalid, an error is returned.
 _ := pattern.Register(name, rawPattern)
@@ -310,14 +305,14 @@ p, _ := babble.NewProtocol("Noise_YY_25519_ChaChaPoly_BLAKE2s", "Demo", true)
 
 You can check the package documentation for details on how to implement new components.
 
-- [Cipher](cipher/README.md). To add a new cipher, implement the `AEAD interface`.
-- [Hash](hash/README.md). To add a new hash, implement the `Hash interface`.
-- [DH](dh/README.md). To add a new DHKE, implement the `Curve interface`.
-- [Pattern](pattern/README.md). To add a new pattern, simply provide the pattern in string.
+- [Cipher](cipher). To add a new cipher, implement the `AEAD interface`.
+- [Hash](hash). To add a new hash, implement the `Hash interface`.
+- [DH](dh). To add a new DHKE, implement the `Curve interface`.
+- [Pattern](pattern). To add a new pattern, simply provide the pattern in string.
 
 
 
 # Vector tests
 
-See [vector documentation](vectors/README.md) for more details.
+See [vector documentation](vectors) for more details.
 
