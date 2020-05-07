@@ -1,6 +1,6 @@
 # Babble
 
-[![Build Status](https://travis-ci.org/yyforyongyu/babble.svg?branch=master)](https://travis-ci.org/yyforyongyu/babble.svg?branch=master) [![Coverage Status](https://coveralls.io/repos/github/yyforyongyu/babble/badge.svg?branch=master)](https://coveralls.io/github/yyforyongyu/babble?branch=master) [![Go Report Card](https://goreportcard.com/badge/github.com/yyforyongyu/babble)](https://goreportcard.com/report/github.com/yyforyongyu/babble) [![GoDoc](https://godoc.org/github.com/yyforyongyu/babble?status.svg)](https://godoc.org/github.com/yyforyongyu/babble)
+[![Build Status](https://travis-ci.org/yyforyongyu/babble.svg?branch=master)](https://travis-ci.org/yyforyongyu/babble.svg?branch=master) [![codecov](https://codecov.io/gh/yyforyongyu/babble/branch/master/graph/badge.svg)](https://codecov.io/gh/yyforyongyu/babble) [![Go Report Card](https://goreportcard.com/badge/github.com/yyforyongyu/babble)](https://goreportcard.com/report/github.com/yyforyongyu/babble) [![GoDoc](https://godoc.org/github.com/yyforyongyu/babble?status.svg)](https://godoc.org/github.com/yyforyongyu/babble)
 
 Babble is the Go implementation of the [Noise Protocol Framework](https://noiseprotocol.org/).
 
