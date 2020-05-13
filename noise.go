@@ -23,12 +23,17 @@ import (
 	"github.com/yyforyongyu/babble/rekey"
 )
 
-// NoisePrefix is the mandatory prefix defined by the noise protocol framework.
-const NoisePrefix = "Noise"
-
 const (
+	// NoisePrefix is the mandatory prefix defined by the noise protocol framework.
+	NoisePrefix = "Noise"
+
+	// defaultRekeyInterval is the number of messages to be encrypted/decrpted
+	// before a rekey action is triggered.
 	defaultRekeyInterval = 10000
-	defaultResetNonce    = true
+
+	// defaultResetNonce specifies whether the nonce is reset to zero when the
+	// rekey condition is met.
+	defaultResetNonce = true
 )
 
 var (
