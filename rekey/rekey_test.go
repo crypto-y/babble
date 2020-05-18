@@ -20,7 +20,7 @@ func TestDefaultRekeyer(t *testing.T) {
 	cipher.InitCipher(key)
 	rk := NewDefault(testInterval, cipher, true)
 
-	newKey := rk.Rekey(nil)
+	newKey := rk.Rekey()
 	require.Equal(t, CipherKeySize, len(newKey), "key size not match")
 	require.NotEqual(t, key, newKey, "key not changed")
 	require.True(t, rk.ResetNonce(), "ResetNonce should be true")

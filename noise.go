@@ -185,6 +185,7 @@ func NewProtocolWithConfig(config *ProtocolConfig) (*HandshakeState, error) {
 			rk = rekey.NewDefault(defaultRekeyInterval, hsc.cipher, true)
 		} else {
 			i := rc.Interval
+			// rekey interval must be greater than 0.
 			if i == 0 {
 				return nil, ErrInvalidRekeyInterval
 			}

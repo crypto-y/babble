@@ -34,7 +34,21 @@ When used by the package `babble`, if unspecified, a default value of `10000` wi
 
 ### Customized Rekeyer
 
-TODO
+To build a customized rekeyer, the interface `Rekeyer` must be met. To use it, pass it through the `ProtocolConfig`,
+
+```go
+// a customized rekeyer
+rk := NewCustomizedRekeyer()
+
+cfg := &babble.ProtocolConfig{
+    Name: "Noise_NN_25519_ChaChaPoly_BLAKE2s",
+    Initiator: true,
+    Prologue: "Demo",
+    Rekeyer: rk,
+}
+
+p, _ := babble.NewProtocolWithConfig(cfg)
+```
 
 
 

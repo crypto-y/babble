@@ -138,7 +138,7 @@ func (cs *CipherState) Rekey() error {
 
 	if cs.RekeyManger != nil {
 		// use it if a rekeyer is defined
-		newKey = cs.RekeyManger.Rekey(cs.key[:])
+		newKey = cs.RekeyManger.Rekey()
 	} else {
 		// use the default rekey from the cipher
 		newKey = cs.cipher.Rekey()

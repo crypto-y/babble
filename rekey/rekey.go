@@ -21,10 +21,10 @@ var (
 // Rekeyer defines a customized Rekey function to be used when rotating cipher
 // key.
 type Rekeyer interface {
-	// Rekey creates a new key. The old key is passed in if the implementation
-	// uses algorithms which relies on the old cipher key to create the new key.
-	// A 32-byte key is returned.
-	Rekey(key []byte) [CipherKeySize]byte
+	// Rekey creates a new key. The old key can be accessed using cipher.key if
+	// the implementation uses algorithms which relies on the old cipher key to
+	// create the new key. A 32-byte key is returned.
+	Rekey() [CipherKeySize]byte
 
 	// CheckRekey implements the logic to decide whether a rekey should be
 	// performed based on the given nonce. Other customized logic unrelated to
@@ -68,7 +68,7 @@ func NewDefault(interval uint64, cipher noiseCipher.AEAD,
 	}
 }
 
-func (d *defaultRekeyer) Rekey([]byte) [CipherKeySize]byte {
+func (d *defaultRekeyer) Rekey() [CipherKeySize]byte {
 	// use the default rekey from the cipher
 	// TODO: rm dependency on cipher
 	return d.cipher.Rekey()
