@@ -36,3 +36,6 @@ noiseCipher.Register("ChaChaPolyX", newCipher)
 p, _ := babble.NewProtocol("Noise_NN_25519_ChaChaPolyX_BLAKE2s", "Demo", true)
 ```
 
+
+
+When registering new cipher functions, it won't check the size of AD (as in `cipher.Cipher().Overhead()`). While a 16-byte AD size is specified by the noise protocol framework, it's up to the application to decide the actual size to be used when registering new functions.
