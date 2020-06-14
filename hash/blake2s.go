@@ -8,12 +8,11 @@ import (
 
 type hashBLAKE2s struct {
 	name string
-	h    hash.Hash
 }
 
 // BlockLen for BLAKE2s should be 64.
 func (s *hashBLAKE2s) BlockLen() int {
-	return s.h.BlockSize()
+	return blake2s.BlockSize
 }
 
 func (s *hashBLAKE2s) New() hash.Hash {
@@ -23,23 +22,15 @@ func (s *hashBLAKE2s) New() hash.Hash {
 
 // HashLen for BLAKE2s should be 32.
 func (s *hashBLAKE2s) HashLen() int {
-	return s.h.Size()
+	return blake2s.Size
 }
 
 func (s *hashBLAKE2s) String() string {
 	return s.name
 }
 
-func (s *hashBLAKE2s) Reset() {
-	s.h.Reset()
-}
-
 func newBlake2s() Hash {
-	blake2sHash, _ := blake2s.New256(nil)
-	return &hashBLAKE2s{
-		name: "BLAKE2s",
-		h:    blake2sHash,
-	}
+	return &hashBLAKE2s{name: "BLAKE2s"}
 }
 
 func init() {

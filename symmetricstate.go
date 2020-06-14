@@ -214,10 +214,6 @@ func (s *symmetricState) Reset() {
 		s.cs.Reset()
 		s.cs = nil
 	}
-
-	if s.hash != nil {
-		s.hash.Reset()
-	}
 }
 
 // Split returns a pair of CipherState structs for encrypting transport

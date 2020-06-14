@@ -7,12 +7,11 @@ import (
 
 type hashSha512 struct {
 	name string
-	h    hash.Hash
 }
 
 // BlockLen for sha512 should be 128.
 func (s *hashSha512) BlockLen() int {
-	return s.h.BlockSize()
+	return sha512.BlockSize
 }
 
 func (s *hashSha512) New() hash.Hash {
@@ -21,22 +20,15 @@ func (s *hashSha512) New() hash.Hash {
 
 // HashLen for sha512 should be 64.
 func (s *hashSha512) HashLen() int {
-	return s.h.Size()
+	return sha512.Size
 }
 
 func (s *hashSha512) String() string {
 	return s.name
 }
 
-func (s *hashSha512) Reset() {
-	s.h.Reset()
-}
-
 func newSha512() Hash {
-	return &hashSha512{
-		name: "SHA512",
-		h:    sha512.New(),
-	}
+	return &hashSha512{name: "SHA512"}
 }
 
 func init() {

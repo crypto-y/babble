@@ -32,10 +32,6 @@ func (s *hashSha3) String() string {
 	return s.name
 }
 
-func (s *hashSha3) Reset() {
-	s.h.Reset()
-}
-
 func newSha3() noiseHash.Hash {
 	return &hashSha3{
 		name: "SHA3",

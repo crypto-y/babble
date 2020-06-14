@@ -33,9 +33,6 @@ type Hash interface {
 	// HashLen returns a constant specifying the size in bytes of the hash
 	// output. Must be 32 or 64.
 	HashLen() int
-
-	// Reset resets the Hash to its initial state.
-	Reset()
 }
 
 // FromString uses the provided hash name, s, to query a built-in hash.
