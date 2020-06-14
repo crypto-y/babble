@@ -21,10 +21,9 @@ Note: the current version doesn't implement the `fallback` mode.
 
 # Usage
 
-To use, import the package `babble`,
-
-```go
-import "github.com/yyforyongyu/babble"
+To use, download the package,
+```
+go get -u "github.com/yyforyongyu/babble"
 ```
 
 In addition to the main package `babble`, there are five packages which can be used for customization, see [Extentable Components](#Extentable-Components).
