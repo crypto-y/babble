@@ -4,7 +4,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/yyforyongyu/babble"
+	"github.com/crypto-y/babble"
 )
 
 func main() {

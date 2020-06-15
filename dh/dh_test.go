@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/crypto-y/babble/dh"
 	"github.com/stretchr/testify/require"
-	"github.com/yyforyongyu/babble/dh"
 )
 
 var (

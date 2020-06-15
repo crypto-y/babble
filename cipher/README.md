@@ -24,7 +24,7 @@ Two cipher functions are supported, as specified in the [noise specs](https://no
 
 # Customized Cipher Functions
 
-To create your own cipher function, you'll need to implement the interface specified in [`cipher.go`](https://github.com/yyforyongyu/babble/blob/master/cipher/cipher.go). Once implemented, you need to register it using `Register(Name, Cipher)`.
+To create your own cipher function, you'll need to implement the interface specified in [`cipher.go`](https://github.com/crypto-y/babble/blob/master/cipher/cipher.go). Once implemented, you need to register it using `Register(Name, Cipher)`.
 
 Check [examples/newcipher](../examples/newcipher/main.go), which implements `ChaChaPolyX`, once implemented, Once implemented, it can be used via the protocol name,
 

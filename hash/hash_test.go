@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/crypto-y/babble/hash"
 	"github.com/stretchr/testify/require"
-	"github.com/yyforyongyu/babble/hash"
 )
 
 func TestSetUp(t *testing.T) {

@@ -3,11 +3,11 @@ package babble
 import (
 	"testing"
 
+	"github.com/crypto-y/babble/cipher"
+	noiseCipher "github.com/crypto-y/babble/cipher"
+	noiseCurve "github.com/crypto-y/babble/dh"
+	noiseHash "github.com/crypto-y/babble/hash"
 	"github.com/stretchr/testify/require"
-	"github.com/yyforyongyu/babble/cipher"
-	noiseCipher "github.com/yyforyongyu/babble/cipher"
-	noiseCurve "github.com/yyforyongyu/babble/dh"
-	noiseHash "github.com/yyforyongyu/babble/hash"
 )
 
 func TestSymmetricState(t *testing.T) {

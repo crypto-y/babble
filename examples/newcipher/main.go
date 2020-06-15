@@ -6,7 +6,7 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	noiseCipher "github.com/yyforyongyu/babble/cipher"
+	noiseCipher "github.com/crypto-y/babble/cipher"
 	"golang.org/x/crypto/chacha20poly1305"
 )
 

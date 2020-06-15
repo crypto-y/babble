@@ -7,7 +7,7 @@ package rekey
 import (
 	"errors"
 
-	noiseCipher "github.com/yyforyongyu/babble/cipher"
+	noiseCipher "github.com/crypto-y/babble/cipher"
 )
 
 // CipherKeySize defines the byte length of the key returned from Rekey.

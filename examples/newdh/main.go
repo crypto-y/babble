@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/yyforyongyu/babble/dh"
+	"github.com/crypto-y/babble/dh"
 )
 
 // DHLEN must be >= 32.

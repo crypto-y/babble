@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/yyforyongyu/babble"
+	"github.com/crypto-y/babble"
 )
 
 func main() {

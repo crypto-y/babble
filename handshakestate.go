@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/yyforyongyu/babble/dh"
-	"github.com/yyforyongyu/babble/pattern"
+	"github.com/crypto-y/babble/dh"
+	"github.com/crypto-y/babble/pattern"
 )
 
 // maxMessageSize defines the max message size in bytes.

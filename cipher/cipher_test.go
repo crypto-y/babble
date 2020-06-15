@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/yyforyongyu/babble/cipher"
+	"github.com/crypto-y/babble/cipher"
 )
 
 var (

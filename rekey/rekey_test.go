@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	noiseCipher "github.com/crypto-y/babble/cipher"
 	"github.com/stretchr/testify/require"
-	noiseCipher "github.com/yyforyongyu/babble/cipher"
 )
 
 func TestDefaultRekeyer(t *testing.T) {

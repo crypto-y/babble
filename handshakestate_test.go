@@ -4,13 +4,13 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/crypto-y/babble/cipher"
+	noiseCipher "github.com/crypto-y/babble/cipher"
+	"github.com/crypto-y/babble/dh"
+	noiseCurve "github.com/crypto-y/babble/dh"
+	noiseHash "github.com/crypto-y/babble/hash"
+	"github.com/crypto-y/babble/pattern"
 	"github.com/stretchr/testify/require"
-	"github.com/yyforyongyu/babble/cipher"
-	noiseCipher "github.com/yyforyongyu/babble/cipher"
-	"github.com/yyforyongyu/babble/dh"
-	noiseCurve "github.com/yyforyongyu/babble/dh"
-	noiseHash "github.com/yyforyongyu/babble/hash"
-	"github.com/yyforyongyu/babble/pattern"
 )
 
 func TestInitializeHandshakeState(t *testing.T) {
@@ -1108,7 +1108,7 @@ func TestHandshakeState(t *testing.T) {
 	// -> e
 	// <- e, ee
 	// -> s, se
-	plaintext := []byte("yyforyongyu")
+	plaintext := []byte("crypto-y")
 	sAlice, _ := curveA.GenerateKeyPair(nil)
 	sBob, _ := curveB.GenerateKeyPair(nil)
 

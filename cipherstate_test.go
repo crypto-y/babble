@@ -3,10 +3,10 @@ package babble
 import (
 	"testing"
 
+	"github.com/crypto-y/babble/cipher"
+	noiseCipher "github.com/crypto-y/babble/cipher"
+	"github.com/crypto-y/babble/rekey"
 	"github.com/stretchr/testify/require"
-	"github.com/yyforyongyu/babble/cipher"
-	noiseCipher "github.com/yyforyongyu/babble/cipher"
-	"github.com/yyforyongyu/babble/rekey"
 )
 
 func TestCipherStateNoRekeyManager(t *testing.T) {

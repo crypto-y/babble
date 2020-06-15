@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/yyforyongyu/babble/vectors"
+	"github.com/crypto-y/babble/vectors"
 )
 
 const filepath = "./vectors/vectors.txt"

@@ -4,8 +4,8 @@ package dh_test
 import (
 	"testing"
 
+	"github.com/crypto-y/babble/dh"
 	"github.com/stretchr/testify/require"
-	"github.com/yyforyongyu/babble/dh"
 )
 
 var secp256k1, _ = dh.FromString("secp256k1")

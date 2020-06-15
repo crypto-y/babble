@@ -4,9 +4,9 @@ import (
 	"errors"
 	"testing"
 
+	noiseCipher "github.com/crypto-y/babble/cipher"
+	"github.com/crypto-y/babble/rekey"
 	"github.com/stretchr/testify/require"
-	noiseCipher "github.com/yyforyongyu/babble/cipher"
-	"github.com/yyforyongyu/babble/rekey"
 )
 
 func TestNewProtocolWithConfig(t *testing.T) {

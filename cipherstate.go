@@ -4,8 +4,8 @@ import (
 	"errors"
 	"reflect"
 
-	noiseCipher "github.com/yyforyongyu/babble/cipher"
-	"github.com/yyforyongyu/babble/rekey"
+	noiseCipher "github.com/crypto-y/babble/cipher"
+	"github.com/crypto-y/babble/rekey"
 )
 
 // CipherKeySize defines the byte length of the key used for cipher.

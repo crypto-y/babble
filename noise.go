@@ -16,11 +16,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/yyforyongyu/babble/cipher"
-	"github.com/yyforyongyu/babble/dh"
-	"github.com/yyforyongyu/babble/hash"
-	"github.com/yyforyongyu/babble/pattern"
-	"github.com/yyforyongyu/babble/rekey"
+	"github.com/crypto-y/babble/cipher"
+	"github.com/crypto-y/babble/dh"
+	"github.com/crypto-y/babble/hash"
+	"github.com/crypto-y/babble/pattern"
+	"github.com/crypto-y/babble/rekey"
 )
 
 const (

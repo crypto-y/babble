@@ -1,6 +1,6 @@
 # Babble
 
-[![Build Status](https://travis-ci.org/yyforyongyu/babble.svg?branch=master)](https://travis-ci.org/yyforyongyu/babble.svg?branch=master) [![codecov](https://codecov.io/gh/yyforyongyu/babble/branch/master/graph/badge.svg)](https://codecov.io/gh/yyforyongyu/babble) [![Go Report Card](https://goreportcard.com/badge/github.com/yyforyongyu/babble)](https://goreportcard.com/report/github.com/yyforyongyu/babble) [![GoDoc](https://godoc.org/github.com/yyforyongyu/babble?status.svg)](https://godoc.org/github.com/yyforyongyu/babble)
+[![Build Status](https://travis-ci.org/crypto-y/babble.svg?branch=master)](https://travis-ci.org/crypto-y/babble.svg?branch=master) [![codecov](https://codecov.io/gh/crypto-y/babble/branch/master/graph/badge.svg)](https://codecov.io/gh/crypto-y/babble) [![Go Report Card](https://goreportcard.com/badge/github.com/crypto-y/babble)](https://goreportcard.com/report/github.com/crypto-y/babble) [![GoDoc](https://godoc.org/github.com/crypto-y/babble?status.svg)](https://godoc.org/github.com/crypto-y/babble)
 
 Babble is the Go implementation of the [Noise Protocol Framework](https://noiseprotocol.org/).
 
@@ -23,17 +23,17 @@ Note: the current version doesn't implement the `fallback` mode.
 
 To use, download the package,
 ```
-go get -u "github.com/yyforyongyu/babble"
+go get -u "github.com/crypto-y/babble"
 ```
 
 In addition to the main package `babble`, there are five packages which can be used for customization, see [Extentable Components](#Extentable-Components).
 
 ```go
-"github.com/yyforyongyu/babble/cipher"
-"github.com/yyforyongyu/babble/dh"
-"github.com/yyforyongyu/babble/hash"
-"github.com/yyforyongyu/babble/rekey"
-"github.com/yyforyongyu/babble/pattern"
+"github.com/crypto-y/babble/cipher"
+"github.com/crypto-y/babble/dh"
+"github.com/crypto-y/babble/hash"
+"github.com/crypto-y/babble/rekey"
+"github.com/crypto-y/babble/pattern"
 ```
 
 **WARNING**: The Go's implementation of  `AESGCM` might be vunerable to side channel attack, please read [the documentation](cipher) if you plan to use it.
@@ -174,7 +174,7 @@ p, _ := babble.NewProtocolWithConfig(cfg)
 
 You can also specify a customized `rekeyer` by defining your own rules on when and how the cipher key should be reset. Read [this documentation](rekey) for more details.
 
-Check [here](https://pkg.go.dev/github.com/yyforyongyu/babble?tab=doc#ProtocolConfig) for the full list of parameters in the  `ProtocolConfig`.
+Check [here](https://pkg.go.dev/github.com/crypto-y/babble?tab=doc#ProtocolConfig) for the full list of parameters in the  `ProtocolConfig`.
 
 
 
@@ -287,7 +287,7 @@ The full example can be found at [examples/handshake](examples/handshake/main.go
 Aside from the built-in components, it's pretty straightforward to add new components to the framework using the `Register` method defined in each component's package. For instance, to add a new pattern,
 
 ```go
-import "github.com/yyforyongyu/babble/pattern"
+import "github.com/crypto-y/babble/pattern"
 
 // Register a dumb pattern
 name := "YY"
