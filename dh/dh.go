@@ -30,10 +30,6 @@ type PublicKey interface {
 
 	// Hex returns the hexstring of the public key.
 	Hex() string
-
-	// LoadBytes loads the byte slice into a byte array specifically for a
-	// public key defined in each curve.
-	LoadBytes(data []byte) error
 }
 
 // PrivateKey is a key pair. Since a private key always corresponds to at least
@@ -51,11 +47,6 @@ type PrivateKey interface {
 	// on the private key, or by signaling an error to the caller. The DH
 	// function may define more specific rules for handling invalid values.
 	DH(pub []byte) ([]byte, error)
-
-	// Update updates both the private key bytes and the public key bytes with
-	// the data supplied. This means the calculation of the public key from the
-	// private key shall be implemented inside this method.
-	Update(data []byte)
 
 	// PubKey returns the associated public key.
 	PubKey() PublicKey

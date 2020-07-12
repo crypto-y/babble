@@ -20,8 +20,8 @@ func (pk *publicKey448) Bytes() []byte {
 	return pk.raw[:]
 }
 
-// LoadBytes takes the input data and copies it into a dhlen448-byte array.
-func (pk *publicKey448) LoadBytes(data []byte) error {
+// loadBytes takes the input data and copies it into a dhlen448-byte array.
+func (pk *publicKey448) loadBytes(data []byte) error {
 	if len(data) != dhlen448 {
 		return errMismatchedKey("public", dhlen448, len(data))
 	}
@@ -50,7 +50,7 @@ func (pk *privateKey448) Bytes() []byte {
 func (pk *privateKey448) DH(pub []byte) ([]byte, error) {
 	var pubKey publicKey448
 	// validate public key
-	if err := pubKey.LoadBytes(pub); err != nil {
+	if err := pubKey.loadBytes(pub); err != nil {
 		return nil, err
 	}
 
@@ -64,8 +64,8 @@ func (pk *privateKey448) PubKey() PublicKey {
 	return pk.pub
 }
 
-// Update writes secret to the private key.
-func (pk *privateKey448) Update(data []byte) {
+// update writes secret to the private key.
+func (pk *privateKey448) update(data []byte) {
 	copy(pk.raw[:], data[:dhlen448])
 
 	// calcuate the public key
@@ -94,7 +94,7 @@ func (c *curve448) GenerateKeyPair(entropy []byte) (PrivateKey, error) {
 
 	// set the raw data for both private and public keys.
 	priv := &privateKey448{pub: &publicKey448{}}
-	priv.Update(secret)
+	priv.update(secret)
 	return priv, nil
 }
 
@@ -104,14 +104,14 @@ func (c *curve448) LoadPrivateKey(data []byte) (PrivateKey, error) {
 	if len(data) != dhlen448 {
 		return nil, errMismatchedKey("private", dhlen448, len(data))
 	}
-	p.Update(data)
+	p.update(data)
 	return p, nil
 }
 
 // LoadPublicKey uses the data provided to create a new public key.
 func (c *curve448) LoadPublicKey(data []byte) (PublicKey, error) {
 	p := &publicKey448{}
-	if err := p.LoadBytes(data); err != nil {
+	if err := p.loadBytes(data); err != nil {
 		return nil, err
 	}
 	return p, nil
