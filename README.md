@@ -314,4 +314,3 @@ You can check the package documentation for details on how to implement new comp
 # Vector tests
 
 See [vector documentation](vectors) for more details.
-
