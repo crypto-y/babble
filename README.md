@@ -41,7 +41,6 @@ In addition to the main package `babble`, there are five packages which can be u
 There are two methods can be used for contructing new handshake state, `NewProtocol` and `NewProtocolWithConfig`.
 
 
-
 ### NewProtocol
 
 ```go
