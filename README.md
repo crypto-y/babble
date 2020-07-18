@@ -310,7 +310,6 @@ You can check the package documentation for details on how to implement new comp
 - [Pattern](pattern). To add a new pattern, simply provide the pattern in string.
 
 
-
 # Vector tests
 
 See [vector documentation](vectors) for more details.
