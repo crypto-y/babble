@@ -187,6 +187,8 @@ var (
 
 func init() {
 	for _, p := range deferred {
-		Register(p.name, p.pattern)
+		if err := Register(p.name, p.pattern); err != nil {
+			panic(err)
+		}
 	}
 }

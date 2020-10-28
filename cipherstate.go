@@ -183,7 +183,10 @@ func (cs *CipherState) incrementNonce() error {
 		return err
 	}
 	if need {
-		cs.Rekey()
+		if err := cs.Rekey(); err != nil {
+			return err
+		}
+
 		if cs.RekeyManger.ResetNonce() {
 			cs.nonce = 0
 		}

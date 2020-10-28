@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"github.com/crypto-y/babble/cipher"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -31,7 +31,7 @@ var (
 
 func TestAESGCM(t *testing.T) {
 	aesgcm, _ := cipher.FromString("AESGCM")
-	aesgcm.InitCipher(key)
+	require.NoError(t, aesgcm.InitCipher(key))
 
 	require.Equal(t, "AESGCM", aesgcm.String(), "name should match")
 
@@ -94,7 +94,7 @@ func TestAESGCM(t *testing.T) {
 
 func TestChaChaPoly(t *testing.T) {
 	ChaChaPoly, _ := cipher.FromString("ChaChaPoly")
-	ChaChaPoly.InitCipher(key)
+	require.NoError(t, ChaChaPoly.InitCipher(key))
 
 	require.Equal(t, "ChaChaPoly", ChaChaPoly.String(), "name should match")
 

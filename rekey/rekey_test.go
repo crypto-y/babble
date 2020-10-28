@@ -17,7 +17,7 @@ func TestDefaultRekeyer(t *testing.T) {
 		0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0x6b,
 	}
 	cipher, _ := noiseCipher.FromString("ChaChaPoly")
-	cipher.InitCipher(key)
+	require.NoError(t, cipher.InitCipher(key))
 	rk := NewDefault(testInterval, cipher, true)
 
 	newKey := rk.Rekey()

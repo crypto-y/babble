@@ -98,6 +98,8 @@ var (
 
 func init() {
 	for _, p := range interactive {
-		Register(p.name, p.pattern)
+		if err := Register(p.name, p.pattern); err != nil {
+			panic(err)
+		}
 	}
 }

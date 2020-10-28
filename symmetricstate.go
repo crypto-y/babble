@@ -134,13 +134,13 @@ func (s *symmetricState) InitializeSymmetric(protocolName []byte) {
 		copy(s.digest, protocolName)
 	} else {
 		h := s.hash.New()
-		h.Write(protocolName)
+		_, _ = h.Write(protocolName)
 		s.digest = h.Sum(nil)
 	}
 
 	s.chainingKey = make([]byte, s.hash.HashLen())
 	copy(s.chainingKey, s.digest)
-	s.cs.initializeKey(ZEROS)
+	_ = s.cs.initializeKey(ZEROS)
 }
 
 // MixHash sets h = HASH(h || data) and writes it to digest.
@@ -172,7 +172,9 @@ func (s *symmetricState) MixKey(keyMaterial []byte) error {
 	// truncate if HASHLEN is 64.
 	copy(tempKey[:], digests[1])
 
-	s.cs.initializeKey(tempKey)
+	if err := s.cs.initializeKey(tempKey); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -197,7 +199,9 @@ func (s *symmetricState) MixKeyAndHash(keyMaterial []byte) error {
 	// truncate if HASHLEN is 64.
 	copy(tempKey[:], digests[2])
 	s.MixHash(tempHashOutput)
-	s.cs.initializeKey(tempKey)
+	if err := s.cs.initializeKey(tempKey); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -238,8 +242,12 @@ func (s *symmetricState) Split() (c1, c2 *CipherState, err error) {
 	c1 = newCipherState(cipher1, s.cs.RekeyManger)
 	c2 = newCipherState(cipher2, s.cs.RekeyManger)
 
-	c1.initializeKey(tempKey1)
-	c2.initializeKey(tempKey2)
+	if err := c1.initializeKey(tempKey1); err != nil {
+		return nil, nil, err
+	}
+	if err := c2.initializeKey(tempKey2); err != nil {
+		return nil, nil, err
+	}
 
 	return c1, c2, nil
 }

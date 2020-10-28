@@ -35,6 +35,8 @@ var (
 
 func init() {
 	for _, p := range oneWay {
-		Register(p.name, p.pattern)
+		if err := Register(p.name, p.pattern); err != nil {
+			panic(err)
+		}
 	}
 }

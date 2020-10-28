@@ -44,7 +44,8 @@ func TestCipherStateNoRekeyManager(t *testing.T) {
 	require.Equal(t, key, alice.key, "key should match")
 	require.Equal(t, uint64(0), alice.Nonce(), "init key should set nonce to 0")
 
-	bob.initializeKey(key)
+	err = bob.initializeKey(key)
+	require.NoError(t, err)
 
 	// encrypt then decrypt
 	ciphertext, err := alice.EncryptWithAd(ad, message)
@@ -92,7 +93,7 @@ func TestCipherStateNoRekeyManager(t *testing.T) {
 		t, errMissingCipherKey, err, "should return errMissingCipherKey")
 
 	// test encrypt errors
-	alice.initializeKey(key)
+	require.NoError(t, alice.initializeKey(key))
 	alice.SetNonce(maxNonce)
 	ciphertext, err = alice.EncryptWithAd(ad, message)
 	require.Equal(
@@ -131,8 +132,8 @@ func TestCipherStateDefaultRekeyManager(t *testing.T) {
 	rekeyerB := rekey.NewDefault(interval, cipherB, true)
 	alice := newCipherState(cipherA, rekeyerA)
 	bob := newCipherState(cipherB, rekeyerB)
-	alice.initializeKey(key)
-	bob.initializeKey(key)
+	require.NoError(t, alice.initializeKey(key))
+	require.NoError(t, bob.initializeKey(key))
 
 	// encrypt then decrypt
 	ciphertext, err := alice.EncryptWithAd(ad, message)

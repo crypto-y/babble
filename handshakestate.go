@@ -629,7 +629,9 @@ func (hs *HandshakeState) processPreTokenE(d pattern.Token) error {
 	hs.ss.MixHash(keyBytes)
 	// if psk enabled, call MixKey
 	if hs.pskMode() {
-		hs.ss.MixKey(keyBytes)
+		if err := hs.ss.MixKey(keyBytes); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -770,7 +772,9 @@ func (hs *HandshakeState) readTokenE(payload []byte) ([]byte, error) {
 
 	// if psk enabled, call MixKey
 	if hs.pskMode() {
-		hs.ss.MixKey(hs.remoteEphemeralPub.Bytes())
+		if err := hs.ss.MixKey(hs.remoteEphemeralPub.Bytes()); err != nil {
+			return nil, err
+		}
 	}
 
 	return payload[dhlen:], nil
@@ -795,7 +799,9 @@ func (hs *HandshakeState) writeTokenE(payload []byte) ([]byte, error) {
 
 	// if psk enabled, call MixKey
 	if hs.pskMode() {
-		hs.ss.MixKey(hs.localEphemeral.PubKey().Bytes())
+		if err := hs.ss.MixKey(hs.localEphemeral.PubKey().Bytes()); err != nil {
+			return nil, err
+		}
 	}
 
 	return payload, nil
@@ -911,7 +917,9 @@ func (hs *HandshakeState) processTokenDH(token pattern.Token) error {
 	if err != nil {
 		return err
 	}
-	hs.ss.MixKey(digest)
+	if err := hs.ss.MixKey(digest); err != nil {
+		return err
+	}
 
 	return nil
 }

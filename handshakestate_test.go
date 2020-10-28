@@ -298,8 +298,8 @@ func TestIncrementPatternIndexAndSplit(t *testing.T) {
 		true, ssG, XN, s, nil, nil, nil, false)
 	hs.ss.chainingKey = nil
 	// increase twice to trigger the error
-	hs.incrementPatternIndexAndSplit()
-	hs.incrementPatternIndexAndSplit()
+	require.NoError(hs.incrementPatternIndexAndSplit())
+	require.NoError(hs.incrementPatternIndexAndSplit())
 	err = hs.incrementPatternIndexAndSplit()
 	require.Equal(errInvalidChainingKey, err,
 		"should return an invalid chain size error")
